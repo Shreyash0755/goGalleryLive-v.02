@@ -9,6 +9,7 @@ import RegisterScreen from '../screens/Auth/RegisterScreen';
 import GroupListScreen from '../screens/Group/GroupListScreen';
 import CreateGroupScreen from '../screens/Group/CreateGroupScreen';
 import JoinGroupScreen from '../screens/Group/JoinGroupScreen';
+import GroupDetailScreen from '../screens/Group/GroupDetailScreen';
 
 const Stack = createStackNavigator();
 
@@ -17,7 +18,11 @@ const AppNavigator = () => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#000' }}>
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        backgroundColor: '#000'
+      }}>
         <ActivityIndicator size="large" color="#FF6B35" />
       </View>
     );
@@ -31,6 +36,7 @@ const AppNavigator = () => {
             <Stack.Screen name="GroupList" component={GroupListScreen} />
             <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
             <Stack.Screen name="JoinGroup" component={JoinGroupScreen} />
+            <Stack.Screen name="GroupDetail" component={GroupDetailScreen} />
           </>
         ) : (
           <>

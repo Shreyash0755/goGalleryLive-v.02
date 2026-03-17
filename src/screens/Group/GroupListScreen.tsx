@@ -31,20 +31,20 @@ const GroupListScreen = ({ navigation }: any) => {
   };
 
   const renderGroup = ({ item }: { item: Group }) => (
-    <TouchableOpacity
-      style={styles.groupCard}
-      onPress={() => navigation.navigate('GroupGallery', { group: item })}
-    >
-      <View style={styles.groupInfo}>
-        <Text style={styles.groupName}>{item.name}</Text>
-        <Text style={styles.groupMeta}>
-          {Object.keys(item.members).length} members
-          • Code: {item.inviteCode}
-        </Text>
-      </View>
-      <Text style={styles.arrow}>→</Text>
-    </TouchableOpacity>
-  );
+  <TouchableOpacity
+    style={styles.groupCard}
+    onPress={() => navigation.navigate('GroupDetail', { group: item })}
+  >
+    <View style={styles.groupInfo}>
+      <Text style={styles.groupName}>{item.name}</Text>
+      <Text style={styles.groupMeta}>
+        {Object.keys(item.members).length} members
+        • Code: {item.inviteCode}
+      </Text>
+    </View>
+    <Text style={styles.arrow}>→</Text>
+  </TouchableOpacity>
+);
 
   return (
     <View style={styles.container}>
