@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "553470586717",
+    "firebase_url": "https://gogallerylive-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "gogallerylive",
+    "storage_bucket": "gogallerylive.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:553470586717:android:0f712aa336a57e127c42b4",
+        "android_client_info": {
+          "package_name": "com.gogallerylive"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjPVXEzlCxExnsr3YTyThBEhsFP3vMHDo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
