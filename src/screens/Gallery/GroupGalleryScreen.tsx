@@ -9,7 +9,12 @@ import {
   Switch,
   ActivityIndicator,
   Dimensions,
+  Alert,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
+import ImageViewing from 'react-native-image-viewing';
+import RNFS from 'react-native-fs';
 import { usePhotoSharing } from '../../hooks/usePhotoSharing';
 import { listenToGroupPhotos, Photo } from '../../services/photoService';
 import { FirebaseAuth } from '../../services/firebase';
@@ -18,7 +23,13 @@ import { Group } from '../../services/groupService';
 const { width } = Dimensions.get('window');
 const PHOTO_SIZE = width / 3 - 4;
 
-const PhotoItem = ({ item }: { item: Photo }) => {
+const PhotoItem = ({
+  item,
+  onPress,
+}: {
+  item: Photo;
+  onPress: () => void;
+}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -28,10 +39,11 @@ const PhotoItem = ({ item }: { item: Photo }) => {
       style={styles.photoContainer}
       onPress={() => {
         if (error) {
-          console.log('Retrying image:', item.url);
           setError(false);
           setLoading(true);
           setRetryCount(c => c + 1);
+        } else {
+          onPress();
         }
       }}
     >
@@ -43,13 +55,9 @@ const PhotoItem = ({ item }: { item: Photo }) => {
           }}
           style={styles.photo}
           resizeMode="cover"
-          onLoadEnd={() => {
-            console.log('✅ Image loaded:', item.url);
-            setLoading(false);
-          }}
+          onLoadEnd={() => setLoading(false)}
           onError={(e) => {
-            console.log('❌ Image failed:', item.url);
-            console.log('Error:', e.nativeEvent.error);
+            console.log('❌ Image failed:', e.nativeEvent.error);
             setError(true);
             setLoading(false);
           }}
@@ -72,12 +80,46 @@ const PhotoItem = ({ item }: { item: Photo }) => {
   );
 };
 
+// Custom footer for image viewer
+const ImageViewerFooter = ({
+  imageIndex,
+  photos,
+  onDownload,
+}: {
+  imageIndex: number;
+  photos: Photo[];
+  onDownload: (photo: Photo) => void;
+}) => {
+  const photo = photos[imageIndex];
+  return (
+    <View style={styles.viewerFooter}>
+      <View style={styles.viewerInfo}>
+        <Text style={styles.viewerUploader}>
+          📷 {photo?.uploaderName || 'Unknown'}
+        </Text>
+        <Text style={styles.viewerCount}>
+          {imageIndex + 1} / {photos.length}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={styles.downloadButton}
+        onPress={() => photo && onDownload(photo)}
+      >
+        <Text style={styles.downloadButtonText}>⬇ Download</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 const GroupGalleryScreen = ({ route, navigation }: any) => {
   const { group }: { group: Group } = route.params;
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [sharingEnabled, setSharingEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const [downloading, setDownloading] = useState(false);
 
   const currentUser = FirebaseAuth.currentUser;
   const currentMember = group.members[currentUser?.uid || ''];
@@ -89,26 +131,84 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
   );
 
   useEffect(() => {
-    console.log('Starting listener, key:', refreshKey);
     setLoading(true);
-
     const unsubscribe = listenToGroupPhotos(
       group.groupId,
       (newPhotos) => {
         console.log('Photos received:', newPhotos.length);
-        newPhotos.forEach((p, i) =>
-          console.log(`Photo ${i + 1}:`, p.id, p.url)
-        );
         setPhotos([...newPhotos]);
         setLoading(false);
       }
     );
-
-    return () => {
-      console.log('Stopping listener');
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, [group.groupId, refreshKey]);
+
+  const openPhoto = (index: number) => {
+    setViewerIndex(index);
+    setViewerVisible(true);
+  };
+
+  const downloadPhoto = async (photo: Photo) => {
+    try {
+      setDownloading(true);
+
+      // Request storage permission
+     if (Number(Platform.Version) < 33) {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert('Permission needed', 'Storage permission required to download photos');
+          return;
+        }
+      }
+
+      // Get original URL without compression params
+      const originalUrl = photo.url.replace(
+        '/image/upload/w_400,h_400,c_fill,q_70/',
+        '/image/upload/'
+      );
+
+      // Create filename
+      const fileName = `GoGalleryLive_${Date.now()}.jpg`;
+      const downloadPath = `${RNFS.PicturesDirectoryPath}/${fileName}`;
+
+      console.log('Downloading from:', originalUrl);
+      console.log('Saving to:', downloadPath);
+
+      // Download file
+      const result = await RNFS.downloadFile({
+        fromUrl: originalUrl,
+        toFile: downloadPath,
+        progress: (res: any) => {
+          const progress = (res.bytesWritten / res.contentLength) * 100;
+          console.log('Download progress:', progress.toFixed(0) + '%');
+        },
+      }).promise;
+
+      if (result.statusCode === 200) {
+        // Scan file so it appears in gallery
+        await RNFS.scanFile(downloadPath);
+        Alert.alert('✅ Downloaded!', 'Photo saved to your gallery');
+        console.log('Download complete:', downloadPath);
+      } else {
+        throw new Error('Download failed with status: ' + result.statusCode);
+      }
+    } catch (error: any) {
+      console.log('Download error:', error.message);
+      Alert.alert('Download Failed', error.message);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // Convert photos to format needed by ImageViewing
+  const imageUrls = photos.map(p => ({
+    uri: p.url.replace(
+      '/image/upload/w_400,h_400,c_fill,q_70/',
+      '/image/upload/w_1200,q_90/'
+    )
+  }));
 
   return (
     <View style={styles.container}>
@@ -121,9 +221,16 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         <Text style={styles.title} numberOfLines={1}>
           {group.name}
         </Text>
-        <TouchableOpacity onPress={() => setRefreshKey(k => k + 1)}>
-          <Text style={styles.refreshButton}>↻</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={() => setRefreshKey(k => k + 1)}>
+            <Text style={styles.headerIcon}>↻</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('GroupDetail', { group })}
+          >
+            <Text style={styles.headerIcon}>ℹ</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Sharing Toggle */}
@@ -171,7 +278,12 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       ) : (
         <FlatList
           data={photos}
-          renderItem={({ item }) => <PhotoItem item={item} />}
+          renderItem={({ item, index }) => (
+            <PhotoItem
+              item={item}
+              onPress={() => openPhoto(index)}
+            />
+          )}
           keyExtractor={(item, index) => `${item.id}_${index}`}
           numColumns={3}
           contentContainerStyle={styles.photoGrid}
@@ -180,6 +292,31 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
           onRefresh={() => setRefreshKey(k => k + 1)}
           refreshing={loading}
         />
+      )}
+
+      {/* Full Screen Image Viewer */}
+      <ImageViewing
+        images={imageUrls}
+        imageIndex={viewerIndex}
+        visible={viewerVisible}
+        onRequestClose={() => setViewerVisible(false)}
+        swipeToCloseEnabled={true}
+        doubleTapToZoomEnabled={true}
+        FooterComponent={({ imageIndex }) => (
+          <ImageViewerFooter
+            imageIndex={imageIndex}
+            photos={photos}
+            onDownload={downloadPhoto}
+          />
+        )}
+      />
+
+      {/* Download Loading Overlay */}
+      {downloading && (
+        <View style={styles.downloadOverlay}>
+          <ActivityIndicator size="large" color="#FF6B35" />
+          <Text style={styles.downloadingText}>Downloading...</Text>
+        </View>
       )}
 
     </View>
@@ -205,18 +342,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     width: 60,
   },
-  refreshButton: {
-    color: '#FF6B35',
-    fontSize: 24,
-    width: 60,
-    textAlign: 'right',
-  },
   title: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
     flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: 12,
+    width: 60,
+    justifyContent: 'flex-end',
+  },
+  headerIcon: {
+    color: '#FF6B35',
+    fontSize: 20,
   },
   toggleContainer: {
     flexDirection: 'row',
@@ -324,6 +465,50 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: 4,
     paddingVertical: 2,
+  },
+  viewerFooter: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 16,
+    paddingBottom: 32,
+  },
+  viewerInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  viewerUploader: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  viewerCount: {
+    color: '#888',
+    fontSize: 14,
+  },
+  downloadButton: {
+    backgroundColor: '#FF6B35',
+    borderRadius: 10,
+    padding: 14,
+    alignItems: 'center',
+  },
+  downloadButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  downloadOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  downloadingText: {
+    color: '#fff',
+    marginTop: 12,
+    fontSize: 16,
   },
 });
 
