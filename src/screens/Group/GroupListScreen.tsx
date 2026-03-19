@@ -33,7 +33,7 @@ const GroupListScreen = ({ navigation }: any) => {
   const renderGroup = ({ item }: { item: Group }) => (
   <TouchableOpacity
     style={styles.groupCard}
-    onPress={() => navigation.navigate('GroupDetail', { group: item })}
+    onPress={() => navigation.navigate('GroupGallery', { group: item })}
   >
     <View style={styles.groupInfo}>
       <Text style={styles.groupName}>{item.name}</Text>
@@ -45,7 +45,6 @@ const GroupListScreen = ({ navigation }: any) => {
     <Text style={styles.arrow}>→</Text>
   </TouchableOpacity>
 );
-
   return (
     <View style={styles.container}>
 
