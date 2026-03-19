@@ -1,4 +1,4 @@
-import { ref, push, onValue, get } from '@react-native-firebase/database';
+import { ref, push, onValue } from '@react-native-firebase/database';
 import { FirebaseDatabase, FirebaseAuth, DBPaths } from './firebase';
 import { uploadPhotoToCloudinary } from './cloudinaryService';
 
@@ -10,6 +10,14 @@ export interface Photo {
   timestamp: number;
   groupId: string;
 }
+
+// Compress image URL using Cloudinary transformations
+const getOptimizedUrl = (url: string): string => {
+  return url.replace(
+    '/image/upload/',
+    '/image/upload/w_400,h_400,c_fill,q_70/'
+  );
+};
 
 // UPLOAD AND SHARE PHOTO
 export const uploadAndSharePhoto = async (
@@ -67,20 +75,16 @@ export const listenToGroupPhotos = (
         return;
       }
 
-      // Use val() to get all data at once
       const rawData = snapshot.val();
-      console.log('Raw data keys:', Object.keys(rawData || {}));
       console.log('Total entries:', Object.keys(rawData || {}).length);
 
       const photos: Photo[] = [];
 
-      // Convert object to array manually
       Object.entries(rawData).forEach(([key, value]: [string, any]) => {
-        console.log('Processing key:', key, 'url:', value?.url);
         if (value && value.url) {
           photos.push({
             id: key,
-            url: value.url,
+            url: getOptimizedUrl(value.url), // ← Compressed thumbnail
             uploadedBy: value.uploadedBy || '',
             uploaderName: value.uploaderName || 'Unknown',
             timestamp: value.timestamp || 0,
