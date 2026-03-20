@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,17 +12,20 @@ import {
   Alert,
   PermissionsAndroid,
   Platform,
+  Modal,
+  ScrollView,
+  StatusBar,
 } from 'react-native';
-import ImageViewing from 'react-native-image-viewing';
 import RNFS from 'react-native-fs';
 import { usePhotoSharing } from '../../hooks/usePhotoSharing';
 import { listenToGroupPhotos, Photo } from '../../services/photoService';
 import { FirebaseAuth } from '../../services/firebase';
 import { Group } from '../../services/groupService';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const PHOTO_SIZE = width / 3 - 4;
 
+// Photo thumbnail component
 const PhotoItem = ({
   item,
   onPress,
@@ -49,15 +52,11 @@ const PhotoItem = ({
     >
       {!error ? (
         <Image
-          source={{
-            uri: `${item.url}?retry=${retryCount}`,
-            cache: 'reload',
-          }}
+          source={{ uri: `${item.url}?retry=${retryCount}` }}
           style={styles.photo}
           resizeMode="cover"
           onLoadEnd={() => setLoading(false)}
-          onError={(e) => {
-            console.log('❌ Image failed:', e.nativeEvent.error);
+          onError={() => {
             setError(true);
             setLoading(false);
           }}
@@ -80,37 +79,130 @@ const PhotoItem = ({
   );
 };
 
-// Custom footer for image viewer
-const ImageViewerFooter = ({
-  imageIndex,
+// Full screen photo viewer
+const PhotoViewer = ({
+  visible,
   photos,
+  initialIndex,
+  onClose,
   onDownload,
+  downloading,
 }: {
-  imageIndex: number;
+  visible: boolean;
   photos: Photo[];
+  initialIndex: number;
+  onClose: () => void;
   onDownload: (photo: Photo) => void;
+  downloading: boolean;
 }) => {
-  const photo = photos[imageIndex];
-  return (
-    <View style={styles.viewerFooter}>
-      <View style={styles.viewerInfo}>
-        <Text style={styles.viewerUploader}>
-          📷 {photo?.uploaderName || 'Unknown'}
-        </Text>
-        <Text style={styles.viewerCount}>
-          {imageIndex + 1} / {photos.length}
-        </Text>
-      </View>
-      <TouchableOpacity
-        style={styles.downloadButton}
-        onPress={() => photo && onDownload(photo)}
-      >
-        <Text style={styles.downloadButtonText}>⬇ Download</Text>
-      </TouchableOpacity>
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (visible) {
+      setCurrentIndex(initialIndex);
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: initialIndex,
+          animated: false,
+        });
+      }, 100);
+    }
+  }, [visible, initialIndex]);
+
+  const currentPhoto = photos[currentIndex];
+
+  const renderFullPhoto = ({ item }: { item: Photo }) => (
+    <View style={styles.fullPhotoContainer}>
+      <Image
+        source={{
+          uri: item.url.replace(
+            '/image/upload/w_400,h_400,c_fill,q_70/',
+            '/image/upload/w_1200,q_90/'
+          )
+        }}
+        style={styles.fullPhoto}
+        resizeMode="contain"
+      />
     </View>
+  );
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={false}
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <StatusBar hidden />
+      <View style={styles.viewerContainer}>
+
+        {/* Close Button */}
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={onClose}
+        >
+          <Text style={styles.closeButtonText}>✕</Text>
+        </TouchableOpacity>
+
+        {/* Photo Counter */}
+        <View style={styles.counterContainer}>
+          <Text style={styles.counterText}>
+            {currentIndex + 1} / {photos.length}
+          </Text>
+        </View>
+
+        {/* Horizontal Photo List */}
+        <FlatList
+          ref={flatListRef}
+          data={photos}
+          renderItem={renderFullPhoto}
+          keyExtractor={(item, index) => `viewer_${item.id}_${index}`}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(e) => {
+            const index = Math.round(
+              e.nativeEvent.contentOffset.x / width
+            );
+            setCurrentIndex(index);
+          }}
+          getItemLayout={(_, index) => ({
+            length: width,
+            offset: width * index,
+            index,
+          })}
+          initialScrollIndex={initialIndex}
+        />
+
+        {/* Footer */}
+        <View style={styles.viewerFooter}>
+          <Text style={styles.viewerUploader}>
+            📷 {currentPhoto?.uploaderName || 'Unknown'}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.downloadButton,
+              downloading && styles.downloadButtonDisabled
+            ]}
+            onPress={() => currentPhoto && onDownload(currentPhoto)}
+            disabled={downloading}
+          >
+            {downloading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.downloadButtonText}>⬇ Download</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+      </View>
+    </Modal>
   );
 };
 
+// Main screen
 const GroupGalleryScreen = ({ route, navigation }: any) => {
   const { group }: { group: Group } = route.params;
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -152,47 +244,40 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
     try {
       setDownloading(true);
 
-      // Request storage permission
-     if (Number(Platform.Version) < 33) {
+      if (Number(Platform.Version) < 33) {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
         );
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          Alert.alert('Permission needed', 'Storage permission required to download photos');
+          Alert.alert(
+            'Permission needed',
+            'Storage permission required to download'
+          );
+          setDownloading(false);
           return;
         }
       }
 
-      // Get original URL without compression params
       const originalUrl = photo.url.replace(
         '/image/upload/w_400,h_400,c_fill,q_70/',
         '/image/upload/'
       );
 
-      // Create filename
       const fileName = `GoGalleryLive_${Date.now()}.jpg`;
       const downloadPath = `${RNFS.PicturesDirectoryPath}/${fileName}`;
 
-      console.log('Downloading from:', originalUrl);
-      console.log('Saving to:', downloadPath);
+      console.log('Downloading:', originalUrl);
 
-      // Download file
       const result = await RNFS.downloadFile({
         fromUrl: originalUrl,
         toFile: downloadPath,
-        progress: (res: any) => {
-          const progress = (res.bytesWritten / res.contentLength) * 100;
-          console.log('Download progress:', progress.toFixed(0) + '%');
-        },
       }).promise;
 
       if (result.statusCode === 200) {
-        // Scan file so it appears in gallery
         await RNFS.scanFile(downloadPath);
         Alert.alert('✅ Downloaded!', 'Photo saved to your gallery');
-        console.log('Download complete:', downloadPath);
       } else {
-        throw new Error('Download failed with status: ' + result.statusCode);
+        throw new Error('Download failed');
       }
     } catch (error: any) {
       console.log('Download error:', error.message);
@@ -201,14 +286,6 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       setDownloading(false);
     }
   };
-
-  // Convert photos to format needed by ImageViewing
-  const imageUrls = photos.map(p => ({
-    uri: p.url.replace(
-      '/image/upload/w_400,h_400,c_fill,q_70/',
-      '/image/upload/w_1200,q_90/'
-    )
-  }));
 
   return (
     <View style={styles.container}>
@@ -222,11 +299,15 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
           {group.name}
         </Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => setRefreshKey(k => k + 1)}>
+          <TouchableOpacity
+            onPress={() => setRefreshKey(k => k + 1)}
+            style={styles.headerIconBtn}
+          >
             <Text style={styles.headerIcon}>↻</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('GroupDetail', { group })}
+            style={styles.headerIconBtn}
           >
             <Text style={styles.headerIcon}>ℹ</Text>
           </TouchableOpacity>
@@ -294,30 +375,15 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         />
       )}
 
-      {/* Full Screen Image Viewer */}
-      <ImageViewing
-        images={imageUrls}
-        imageIndex={viewerIndex}
+      {/* Full Screen Viewer */}
+      <PhotoViewer
         visible={viewerVisible}
-        onRequestClose={() => setViewerVisible(false)}
-        swipeToCloseEnabled={true}
-        doubleTapToZoomEnabled={true}
-        FooterComponent={({ imageIndex }) => (
-          <ImageViewerFooter
-            imageIndex={imageIndex}
-            photos={photos}
-            onDownload={downloadPhoto}
-          />
-        )}
+        photos={photos}
+        initialIndex={viewerIndex}
+        onClose={() => setViewerVisible(false)}
+        onDownload={downloadPhoto}
+        downloading={downloading}
       />
-
-      {/* Download Loading Overlay */}
-      {downloading && (
-        <View style={styles.downloadOverlay}>
-          <ActivityIndicator size="large" color="#FF6B35" />
-          <Text style={styles.downloadingText}>Downloading...</Text>
-        </View>
-      )}
 
     </View>
   );
@@ -351,9 +417,12 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     flexDirection: 'row',
-    gap: 12,
     width: 60,
     justifyContent: 'flex-end',
+    gap: 8,
+  },
+  headerIconBtn: {
+    padding: 4,
   },
   headerIcon: {
     color: '#FF6B35',
@@ -466,49 +535,83 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
   },
+  // Viewer styles
+  viewerContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    left: 16,
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  counterContainer: {
+    position: 'absolute',
+    top: 48,
+    alignSelf: 'center',
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  counterText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  fullPhotoContainer: {
+    width: width,
+    height: height,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullPhoto: {
+    width: width,
+    height: height,
+  },
   viewerFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: 'rgba(0,0,0,0.7)',
     padding: 16,
     paddingBottom: 32,
-  },
-  viewerInfo: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
   viewerUploader: {
     color: '#fff',
     fontSize: 14,
-  },
-  viewerCount: {
-    color: '#888',
-    fontSize: 14,
+    flex: 1,
   },
   downloadButton: {
     backgroundColor: '#FF6B35',
-    borderRadius: 10,
-    padding: 14,
-    alignItems: 'center',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginLeft: 12,
+  },
+  downloadButtonDisabled: {
+    backgroundColor: '#888',
   },
   downloadButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-  },
-  downloadOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  downloadingText: {
-    color: '#fff',
-    marginTop: 12,
-    fontSize: 16,
   },
 });
 
