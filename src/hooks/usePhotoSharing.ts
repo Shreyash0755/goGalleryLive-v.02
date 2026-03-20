@@ -10,18 +10,33 @@ import { uploadAndSharePhoto } from '../services/photoService';
 
 const { PhotoDetectionModule } = NativeModules;
 
+interface QueueItem {
+  path: string;
+  timestamp: number;
+}
+
 export const usePhotoSharing = (
   groupId: string,
   sharingEnabled: boolean,
   uploaderName: string
-) => {
+): void => {
   const subscriptionRef = useRef<any>(null);
-  const uploadQueueRef = useRef<string[]>([]);
+  const uploadQueueRef = useRef<QueueItem[]>([]);
   const isUploadingRef = useRef<boolean>(false);
+  const groupIdRef = useRef<string>(groupId);
+  const uploaderNameRef = useRef<string>(uploaderName);
+
+  // Keep refs updated
+  useEffect(() => {
+    groupIdRef.current = groupId;
+    uploaderNameRef.current = uploaderName;
+  }, [groupId, uploaderName]);
 
   const requestPermissions = async (): Promise<boolean> => {
     try {
-      if (Number(Platform.Version) >= 33) {
+      if (Platform.OS !== 'android') return false;
+
+      if (Platform.Version >= 33) {
         const result = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
           {
@@ -50,37 +65,53 @@ export const usePhotoSharing = (
     }
   };
 
-  const processQueue = async () => {
+  const processQueue = async (): Promise<void> => {
     if (isUploadingRef.current) return;
     if (uploadQueueRef.current.length === 0) return;
 
     isUploadingRef.current = true;
-    console.log('Processing upload queue...');
+    console.log('Processing queue...');
 
     while (uploadQueueRef.current.length > 0) {
-      const photoPath = uploadQueueRef.current.shift();
-      if (!photoPath) continue;
+      const item = uploadQueueRef.current.shift();
+      if (!item) continue;
 
-      console.log(`Uploading: ${photoPath}`);
-      console.log(`Queue remaining: ${uploadQueueRef.current.length}`);
+      const { path, timestamp } = item;
+      const age = Date.now() - timestamp;
+
+      console.log(`Photo age: ${age}ms`);
+      console.log(`Path: ${path}`);
+
+      // Skip photos older than 60 seconds
+      if (age > 60000) {
+        console.log('Skipping old photo');
+        continue;
+      }
 
       try {
-        await uploadAndSharePhoto(photoPath, groupId, uploaderName);
+        await uploadAndSharePhoto(
+          path,
+          groupIdRef.current,
+          uploaderNameRef.current
+        );
         console.log('✅ Upload success');
       } catch (error: any) {
         console.log('❌ Upload failed:', error.message);
         try {
-          console.log('Retrying in 3 seconds...');
-          await new Promise(resolve => setTimeout(() => resolve(undefined), 3000));
-          await uploadAndSharePhoto(photoPath, groupId, uploaderName);
+          console.log('Retrying...');
+          await new Promise<void>(resolve => setTimeout(resolve, 3000));
+          await uploadAndSharePhoto(
+            path,
+            groupIdRef.current,
+            uploaderNameRef.current
+          );
           console.log('✅ Retry success');
         } catch (retryError: any) {
           console.log('❌ Retry failed:', retryError.message);
         }
       }
 
-      // Delay between uploads
-      await new Promise(resolve => setTimeout(() => resolve(undefined), 1000));
+      await new Promise<void>(resolve => setTimeout(resolve, 1000));
     }
 
     isUploadingRef.current = false;
@@ -95,10 +126,12 @@ export const usePhotoSharing = (
       if (PhotoDetectionModule) {
         PhotoDetectionModule.stopService();
       }
+      uploadQueueRef.current = [];
+      isUploadingRef.current = false;
       return;
     }
 
-    const startSharing = async () => {
+    const startSharing = async (): Promise<void> => {
       if (!PhotoDetectionModule) {
         Alert.alert('Error', 'Native module not found. Please rebuild app.');
         return;
@@ -122,7 +155,10 @@ export const usePhotoSharing = (
         'NewPhotoDetected',
         (photoPath: string) => {
           console.log('📸 New photo detected:', photoPath);
-          uploadQueueRef.current.push(photoPath);
+          uploadQueueRef.current.push({
+            path: photoPath,
+            timestamp: Date.now(),
+          });
           processQueue();
         }
       );

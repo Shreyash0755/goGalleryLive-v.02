@@ -16,40 +16,55 @@ class DCIMObserver(
         if (fileName == null) return
         if (!isImageFile(fileName)) return
 
-        // Only handle CLOSE_WRITE and MOVED_TO
         val isRelevantEvent = event == 8 ||   // CREATE
                               event == 16 ||  // CLOSE_WRITE
                               event == 32     // MOVED_TO
 
         if (!isRelevantEvent) return
-
-        // Skip if already processed or currently processing
         if (processedFiles.contains(fileName)) return
         if (processingFiles.contains(fileName)) return
 
-        Log.d("DCIMObserver", "Processing: $fileName event: $event")
         processingFiles.add(fileName)
-
         val fullPath = "$path/$fileName"
 
         Thread {
             try {
-                Thread.sleep(2000)
+                // Wait for file to finish writing
+                Thread.sleep(3000)
 
                 val file = File(fullPath)
-                if (file.exists() && file.length() > 10000) {
-                    processedFiles.add(fileName)
-                    processingFiles.remove(fileName)
-                    Log.d("DCIMObserver", "✅ Sending photo: $fullPath")
-                    onNewPhoto(fullPath)
 
-                    // Remove from processed after 5 minutes
-                    Thread.sleep(300000)
-                    processedFiles.remove(fileName)
-                } else {
+                if (!file.exists()) {
                     processingFiles.remove(fileName)
-                    Log.d("DCIMObserver", "❌ File invalid: ${file.length()} bytes")
+                    return@Thread
                 }
+
+                // Check file size
+                if (file.length() < 10000) {
+                    processingFiles.remove(fileName)
+                    Log.d("DCIMObserver", "File too small, skipping: $fileName")
+                    return@Thread
+                }
+
+                // KEY FIX: Only process photos taken in last 30 seconds
+                val fileAge = System.currentTimeMillis() - file.lastModified()
+                Log.d("DCIMObserver", "File age: ${fileAge}ms, file: $fileName")
+
+                if (fileAge > 30000) {
+                    processingFiles.remove(fileName)
+                    Log.d("DCIMObserver", "File too old, skipping: $fileName")
+                    return@Thread
+                }
+
+                processedFiles.add(fileName)
+                processingFiles.remove(fileName)
+                Log.d("DCIMObserver", "✅ Valid new photo: $fullPath")
+                onNewPhoto(fullPath)
+
+                // Clean up after 5 minutes
+                Thread.sleep(300000)
+                processedFiles.remove(fileName)
+
             } catch (e: Exception) {
                 processingFiles.remove(fileName)
                 Log.e("DCIMObserver", "Error: ${e.message}")
