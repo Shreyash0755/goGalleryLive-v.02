@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert
+  Alert,
 } from 'react-native';
 import { registerUser } from '../../services/authService';
 
@@ -17,17 +17,21 @@ const RegisterScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    // Basic validation
     if (!name || !email || !password) {
       Alert.alert('Error', 'Please fill all fields');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
 
     setLoading(true);
     try {
       await registerUser(name, email, password);
-      Alert.alert('Success', 'Account created successfully!');
-      navigation.replace('GroupList');
+      // Navigate to face registration after signup
+      navigation.replace('FaceRegistration');
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {

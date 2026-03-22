@@ -13,7 +13,6 @@ import {
   PermissionsAndroid,
   Platform,
   Modal,
-  ScrollView,
   StatusBar,
 } from 'react-native';
 import RNFS from 'react-native-fs';
@@ -25,7 +24,6 @@ import { Group } from '../../services/groupService';
 const { width, height } = Dimensions.get('window');
 const PHOTO_SIZE = width / 3 - 4;
 
-// Photo thumbnail component
 const PhotoItem = ({
   item,
   onPress,
@@ -79,7 +77,6 @@ const PhotoItem = ({
   );
 };
 
-// Full screen photo viewer
 const PhotoViewer = ({
   visible,
   photos,
@@ -138,7 +135,6 @@ const PhotoViewer = ({
       <StatusBar hidden />
       <View style={styles.viewerContainer}>
 
-        {/* Close Button */}
         <TouchableOpacity
           style={styles.closeButton}
           onPress={onClose}
@@ -146,14 +142,12 @@ const PhotoViewer = ({
           <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
 
-        {/* Photo Counter */}
         <View style={styles.counterContainer}>
           <Text style={styles.counterText}>
             {currentIndex + 1} / {photos.length}
           </Text>
         </View>
 
-        {/* Horizontal Photo List */}
         <FlatList
           ref={flatListRef}
           data={photos}
@@ -176,7 +170,6 @@ const PhotoViewer = ({
           initialScrollIndex={initialIndex}
         />
 
-        {/* Footer */}
         <View style={styles.viewerFooter}>
           <Text style={styles.viewerUploader}>
             📷 {currentPhoto?.uploaderName || 'Unknown'}
@@ -202,11 +195,11 @@ const PhotoViewer = ({
   );
 };
 
-// Main screen
 const GroupGalleryScreen = ({ route, navigation }: any) => {
   const { group }: { group: Group } = route.params;
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [sharingEnabled, setSharingEnabled] = useState(false);
+  const [receiveOnlyMyPhotos, setReceiveOnlyMyPhotos] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [viewerVisible, setViewerVisible] = useState(false);
@@ -235,6 +228,14 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
     return () => unsubscribe();
   }, [group.groupId, refreshKey]);
 
+  // Filter photos based on face detection
+  const filteredPhotos = receiveOnlyMyPhotos
+    ? photos.filter(p =>
+        p.faces?.includes(currentUser?.uid || '') ||
+        p.uploadedBy === currentUser?.uid
+      )
+    : photos;
+
   const openPhoto = (index: number) => {
     setViewerIndex(index);
     setViewerVisible(true);
@@ -249,10 +250,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
           PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
         );
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          Alert.alert(
-            'Permission needed',
-            'Storage permission required to download'
-          );
+          Alert.alert('Permission needed', 'Storage permission required');
           setDownloading(false);
           return;
         }
@@ -266,8 +264,6 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       const fileName = `GoGalleryLive_${Date.now()}.jpg`;
       const downloadPath = `${RNFS.PicturesDirectoryPath}/${fileName}`;
 
-      console.log('Downloading:', originalUrl);
-
       const result = await RNFS.downloadFile({
         fromUrl: originalUrl,
         toFile: downloadPath,
@@ -280,7 +276,6 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         throw new Error('Download failed');
       }
     } catch (error: any) {
-      console.log('Download error:', error.message);
       Alert.alert('Download Failed', error.message);
     } finally {
       setDownloading(false);
@@ -335,10 +330,32 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         />
       </View>
 
+      {/* Face Filter Toggle */}
+      <View style={styles.toggleContainer}>
+        <View style={styles.toggleLeft}>
+          <Text style={styles.toggleTitle}>
+            {receiveOnlyMyPhotos ? '🎯 My Photos Only' : '👥 All Photos'}
+          </Text>
+          <Text style={styles.toggleSubtitle}>
+            {receiveOnlyMyPhotos
+              ? 'Showing photos you appear in'
+              : 'Showing all group photos'
+            }
+          </Text>
+        </View>
+        <Switch
+          value={receiveOnlyMyPhotos}
+          onValueChange={setReceiveOnlyMyPhotos}
+          trackColor={{ false: '#333', true: '#4CAF50' }}
+          thumbColor={receiveOnlyMyPhotos ? '#fff' : '#888'}
+        />
+      </View>
+
       {/* Photo Count */}
-      {photos.length > 0 && (
+      {filteredPhotos.length > 0 && (
         <Text style={styles.photoCount}>
-          {photos.length} photo{photos.length !== 1 ? 's' : ''}
+          {filteredPhotos.length} photo{filteredPhotos.length !== 1 ? 's' : ''}
+          {receiveOnlyMyPhotos ? ' with you' : ' total'}
         </Text>
       )}
 
@@ -348,17 +365,27 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
           <ActivityIndicator size="large" color="#FF6B35" />
           <Text style={styles.loadingText}>Loading photos...</Text>
         </View>
-      ) : photos.length === 0 ? (
+      ) : filteredPhotos.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.emptyIcon}>📷</Text>
-          <Text style={styles.emptyText}>No photos yet</Text>
+          <Text style={styles.emptyIcon}>
+            {receiveOnlyMyPhotos ? '🎯' : '📷'}
+          </Text>
+          <Text style={styles.emptyText}>
+            {receiveOnlyMyPhotos
+              ? 'No photos with you yet'
+              : 'No photos yet'
+            }
+          </Text>
           <Text style={styles.emptySubtext}>
-            Enable sharing and take a photo to get started
+            {receiveOnlyMyPhotos
+              ? 'Photos where your face is detected will appear here'
+              : 'Enable sharing and take a photo to get started'
+            }
           </Text>
         </View>
       ) : (
         <FlatList
-          data={photos}
+          data={filteredPhotos}
           renderItem={({ item, index }) => (
             <PhotoItem
               item={item}
@@ -368,7 +395,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
           keyExtractor={(item, index) => `${item.id}_${index}`}
           numColumns={3}
           contentContainerStyle={styles.photoGrid}
-          extraData={photos}
+          extraData={filteredPhotos}
           removeClippedSubviews={false}
           onRefresh={() => setRefreshKey(k => k + 1)}
           refreshing={loading}
@@ -378,7 +405,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       {/* Full Screen Viewer */}
       <PhotoViewer
         visible={viewerVisible}
-        photos={photos}
+        photos={filteredPhotos}
         initialIndex={viewerIndex}
         onClose={() => setViewerVisible(false)}
         onDownload={downloadPhoto}
@@ -432,7 +459,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#1a1a1a',
-    margin: 12,
+    marginHorizontal: 12,
+    marginTop: 12,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -455,7 +483,8 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 12,
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   centerContainer: {
     flex: 1,
@@ -476,6 +505,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptySubtext: {
     color: '#888',
@@ -486,6 +516,7 @@ const styles = StyleSheet.create({
   },
   photoGrid: {
     padding: 2,
+    paddingTop: 8,
   },
   photoContainer: {
     width: PHOTO_SIZE,
@@ -535,7 +566,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
   },
-  // Viewer styles
   viewerContainer: {
     flex: 1,
     backgroundColor: '#000',

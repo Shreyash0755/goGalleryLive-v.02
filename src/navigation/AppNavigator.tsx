@@ -3,15 +3,15 @@ import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../hooks/useAuth';
-import GroupGalleryScreen from '../screens/Gallery/GroupGalleryScreen';
-import 'react-native-gesture-handler';
 
 import LoginScreen from '../screens/Auth/LoginScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
+import FaceRegistrationScreen from '../screens/Auth/FaceRegistrationScreen';
 import GroupListScreen from '../screens/Group/GroupListScreen';
 import CreateGroupScreen from '../screens/Group/CreateGroupScreen';
 import JoinGroupScreen from '../screens/Group/JoinGroupScreen';
 import GroupDetailScreen from '../screens/Group/GroupDetailScreen';
+import GroupGalleryScreen from '../screens/Gallery/GroupGalleryScreen';
 
 const Stack = createStackNavigator();
 
@@ -40,11 +40,13 @@ const AppNavigator = () => {
             <Stack.Screen name="JoinGroup" component={JoinGroupScreen} />
             <Stack.Screen name="GroupDetail" component={GroupDetailScreen} />
             <Stack.Screen name="GroupGallery" component={GroupGalleryScreen} />
+            <Stack.Screen name="FaceRegistration" component={FaceRegistrationScreen} />
           </>
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="FaceRegistration" component={FaceRegistrationScreen} />
           </>
         )}
       </Stack.Navigator>

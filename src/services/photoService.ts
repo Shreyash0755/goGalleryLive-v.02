@@ -1,6 +1,7 @@
 import { ref, push, onValue } from '@react-native-firebase/database';
 import { FirebaseDatabase, FirebaseAuth, DBPaths } from './firebase';
 import { uploadPhotoToCloudinary } from './cloudinaryService';
+import { findUsersInPhoto } from './faceService';
 
 export interface Photo {
   id: string;
@@ -9,9 +10,11 @@ export interface Photo {
   uploaderName: string;
   timestamp: number;
   groupId: string;
+  faces?: string[];
+  faceProcessed?: boolean;
+  faceCount?: number;
 }
 
-// Compress image URL using Cloudinary transformations
 const getOptimizedUrl = (url: string): string => {
   return url.replace(
     '/image/upload/',
@@ -19,7 +22,6 @@ const getOptimizedUrl = (url: string): string => {
   );
 };
 
-// UPLOAD AND SHARE PHOTO
 export const uploadAndSharePhoto = async (
   photoPath: string,
   groupId: string,
@@ -31,30 +33,49 @@ export const uploadAndSharePhoto = async (
   console.log('=== UPLOAD START ===');
   console.log('Group ID:', groupId);
 
+  // Step 1 — Upload to Cloudinary
   const photoUrl = await uploadPhotoToCloudinary(photoPath);
-  console.log('Cloudinary URL:', photoUrl);
 
   if (!photoUrl || !photoUrl.startsWith('https://')) {
     throw new Error('Invalid URL: ' + photoUrl);
   }
 
-  const dbPath = `${DBPaths.PHOTOS}/${groupId}`;
-  console.log('Saving to path:', dbPath);
+  console.log('Cloudinary URL:', photoUrl);
 
+  // Step 2 — Detect faces in photo
+  console.log('Running face detection...');
+  let detectedUsers: string[] = [];
+
+  try {
+    detectedUsers = await findUsersInPhoto(
+      `file://${photoPath}`,
+      groupId
+    );
+    console.log('Faces detected for users:', detectedUsers);
+  } catch (faceError: any) {
+    console.log('Face detection failed gracefully:', faceError.message);
+    // Continue upload even if face detection fails
+  }
+
+  // Step 3 — Save to Firebase with face data
+  const dbPath = `${DBPaths.PHOTOS}/${groupId}`;
   const photosRef = ref(FirebaseDatabase, dbPath);
+
   const result = await push(photosRef, {
     url: photoUrl,
     uploadedBy: currentUser.uid,
     uploaderName: uploaderName,
     timestamp: Date.now(),
     groupId: groupId,
+    faces: detectedUsers,
+    faceProcessed: true,
+    faceCount: detectedUsers.length,
   });
 
-  console.log('Saved with key:', result.key);
+  console.log('✅ Saved with key:', result.key);
   console.log('=== UPLOAD END ===');
 };
 
-// LISTEN FOR PHOTOS
 export const listenToGroupPhotos = (
   groupId: string,
   onPhotos: (photos: Photo[]) => void
@@ -84,11 +105,14 @@ export const listenToGroupPhotos = (
         if (value && value.url) {
           photos.push({
             id: key,
-            url: getOptimizedUrl(value.url), // ← Compressed thumbnail
+            url: getOptimizedUrl(value.url),
             uploadedBy: value.uploadedBy || '',
             uploaderName: value.uploaderName || 'Unknown',
             timestamp: value.timestamp || 0,
             groupId: value.groupId || groupId,
+            faces: value.faces || [],
+            faceProcessed: value.faceProcessed || false,
+            faceCount: value.faceCount || 0,
           });
         }
       });
