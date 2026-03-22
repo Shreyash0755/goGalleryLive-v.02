@@ -230,11 +230,10 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
 
   // Filter photos based on face detection
   const filteredPhotos = receiveOnlyMyPhotos
-    ? photos.filter(p =>
-        p.faces?.includes(currentUser?.uid || '') ||
-        p.uploadedBy === currentUser?.uid
-      )
-    : photos;
+  ? photos.filter(p =>
+      p.faces?.includes(currentUser?.uid || '')
+    )
+  : photos;
 
   const openPhoto = (index: number) => {
     setViewerIndex(index);
