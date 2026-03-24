@@ -32,6 +32,7 @@ export const uploadAndSharePhoto = async (
 
   console.log('=== UPLOAD START ===');
   console.log('Group ID:', groupId);
+  console.log('Photo path:', photoPath);
 
   // Step 1 — Upload to Cloudinary
   const photoUrl = await uploadPhotoToCloudinary(photoPath);
@@ -42,8 +43,11 @@ export const uploadAndSharePhoto = async (
 
   console.log('Cloudinary URL:', photoUrl);
 
-  // Step 2 — Detect faces in photo
-  console.log('Running face detection...');
+  // Step 2 — Detect faces
+  console.log('=== FACE DETECTION START ===');
+  console.log('Photo path for detection:', photoPath);
+  console.log('Full URI:', `file://${photoPath}`);
+
   let detectedUsers: string[] = [];
 
   try {
@@ -51,13 +55,16 @@ export const uploadAndSharePhoto = async (
       `file://${photoPath}`,
       groupId
     );
-    console.log('Faces detected for users:', detectedUsers);
+    console.log('Detection complete');
+    console.log('Detected users:', JSON.stringify(detectedUsers));
+    console.log('Detected count:', detectedUsers.length);
   } catch (faceError: any) {
-    console.log('Face detection failed gracefully:', faceError.message);
-    // Continue upload even if face detection fails
+    console.log('Face detection failed:', faceError.message);
   }
 
-  // Step 3 — Save to Firebase with face data
+  console.log('=== FACE DETECTION END ===');
+
+  // Step 3 — Save to Firebase
   const dbPath = `${DBPaths.PHOTOS}/${groupId}`;
   const photosRef = ref(FirebaseDatabase, dbPath);
 
@@ -73,6 +80,7 @@ export const uploadAndSharePhoto = async (
   });
 
   console.log('✅ Saved with key:', result.key);
+  console.log('Faces saved:', JSON.stringify(detectedUsers));
   console.log('=== UPLOAD END ===');
 };
 
