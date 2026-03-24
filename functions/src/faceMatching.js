@@ -16,7 +16,7 @@ async function matchFacesInPhoto(photoUrl, memberUids) {
 
     const response = await rekognition.send(command);
     console.log(`AWS matched ${response.FaceMatches.length} faces based on 85% threshold.`);
-    
+
     // ExternalImageId holds the user's Firebase UID since we used it during IndexFaces
     const matchedUids = response.FaceMatches.map(match => match.Face.ExternalImageId);
     console.log('AWS Matched UIDs:', matchedUids);
@@ -34,7 +34,7 @@ async function matchFacesInPhoto(photoUrl, memberUids) {
       console.log('No faces found in photo.');
       return [];
     }
-    
+
     console.error('Rekognition SearchFacesByImage Error:', error);
     throw new Error('Failed to match faces with AWS Rekognition.');
   }
