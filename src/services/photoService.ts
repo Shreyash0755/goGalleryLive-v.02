@@ -52,7 +52,7 @@ export const uploadAndSharePhoto = async (
 
   try {
     detectedUsers = await findUsersInPhoto(
-      `file://${photoPath}`,
+      photoUrl,
       groupId
     );
     console.log('Detection complete');

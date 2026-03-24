@@ -10,51 +10,14 @@ import {
     Dimensions,
 } from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
+import LinearGradient from 'react-native-linear-gradient';
 import { registerFaceAngle } from '../../services/faceService';
 
 const { width } = Dimensions.get('window');
 
-const FACE_ANGLES = [
-    {
-        id: 'front',
-        title: 'Look Straight',
-        instruction: 'Face the camera directly with good lighting',
-        emoji: '😐',
-    },
-    {
-        id: 'left',
-        title: 'Turn Left',
-        instruction: 'Turn your head slightly to the left',
-        emoji: '😶',
-    },
-    {
-        id: 'right',
-        title: 'Turn Right',
-        instruction: 'Turn your head slightly to the right',
-        emoji: '😶',
-    },
-    {
-        id: 'up',
-        title: 'Look Up',
-        instruction: 'Tilt your head slightly upward',
-        emoji: '🙂',
-    },
-    {
-        id: 'smile',
-        title: 'Smile',
-        instruction: 'Look straight and smile naturally',
-        emoji: '😊',
-    },
-];
-
 const FaceRegistrationScreen = ({ navigation }: any) => {
-    const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [completedSteps, setCompletedSteps] = useState<string[]>([]);
     const [lastPhotoUri, setLastPhotoUri] = useState<string | null>(null);
-
-    const currentAngle = FACE_ANGLES[currentStep];
-    const isComplete = completedSteps.length === FACE_ANGLES.length;
 
     const capturePhoto = async () => {
         try {
@@ -66,10 +29,7 @@ const FaceRegistrationScreen = ({ navigation }: any) => {
                 includeBase64: false,
             });
 
-            if (result.didCancel) {
-                console.log('Camera cancelled');
-                return;
-            }
+            if (result.didCancel) return;
 
             if (result.errorCode) {
                 Alert.alert('Camera Error', result.errorMessage || 'Unknown error');
@@ -82,55 +42,40 @@ const FaceRegistrationScreen = ({ navigation }: any) => {
             }
 
             const photoUri = result.assets[0].uri;
-            console.log('=== FACE CAPTURE ===');
-            console.log('Photo URI:', photoUri);
-            console.log('Width:', result.assets[0].width);
-            console.log('Height:', result.assets[0].height);
-            console.log('File size:', result.assets[0].fileSize);
-
             setLastPhotoUri(photoUri);
             setLoading(true);
 
-            // Pass URI directly — image-picker already includes file:// prefix
-            const response = await registerFaceAngle(photoUri, currentAngle.id);
-            console.log('Registration response:', JSON.stringify(response));
+            // Register face with AWS via Firebase
+            const response = await registerFaceAngle(photoUri, 'front');
 
             if (!response.success) {
-                Alert.alert('Try Again', response.message);
+                Alert.alert('Registration Failed', response.message);
+                setLastPhotoUri(null); // Clear preview on failure
                 return;
             }
 
-            const newCompleted = [...completedSteps, currentAngle.id];
-            setCompletedSteps(newCompleted);
-
-            if (newCompleted.length === FACE_ANGLES.length) {
-                Alert.alert(
-                    '🎉 Face Registration Complete!',
-                    'Your face has been registered successfully.',
-                    [{
-                        text: 'Go to App',
-                        onPress: () => {
-                            // useAuth hook will automatically navigate to GroupList
-                            // since user is already logged in
-                            navigation.reset({
-                                index: 0,
-                                routes: [{ name: 'GroupList' }],
-                            });
+            Alert.alert(
+                '🎉 Success!',
+                'Your face has been securely registered.',
+                [{
+                    text: 'Continue to Gallery',
+                    onPress: () => {
+                        try {
+                            if (navigation.canGoBack()) {
+                                navigation.goBack();
+                            } else {
+                                navigation.navigate('GroupList');
+                            }
+                        } catch (e) {
+                            console.log('Handled by AppNavigator');
                         }
-                    }]
-                );
-
-            } else {
-                setCurrentStep(s => s + 1);
-                Alert.alert(
-                    '✅ Captured!',
-                    `${currentAngle.title} saved. ${FACE_ANGLES.length - newCompleted.length} more to go.`
-                );
-            }
+                    }
+                }]
+            );
 
         } catch (error: any) {
             console.log('Capture error:', error.message);
-            Alert.alert('Error', error.message);
+            Alert.alert('Error', 'An unexpected error occurred.');
         } finally {
             setLoading(false);
         }
@@ -139,120 +84,81 @@ const FaceRegistrationScreen = ({ navigation }: any) => {
     const skipRegistration = () => {
         Alert.alert(
             'Skip Face Registration?',
-            'Without registration you will receive ALL photos.',
+            'Without registration, you will not be automatically filtered in group photos.',
             [
-                { text: 'Continue Registration', style: 'cancel' },
+                { text: 'Register Now', style: 'cancel' },
                 {
-                    text: 'Skip for Now',
+                    text: 'Skip',
                     style: 'destructive',
                     onPress: () => {
-                        navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'GroupList' }],
-                        });
+                        try {
+                            if (navigation.canGoBack()) {
+                                navigation.goBack();
+                            } else {
+                                navigation.navigate('GroupList');
+                            }
+                        } catch (e) {
+                            console.log('Handled by AppNavigator');
+                        }
                     }
                 }
             ]
         );
     };
 
-
     return (
-        <View style={styles.container}>
+        <LinearGradient 
+            colors={['#0F172A', '#1E1E2E', '#000000']} 
+            style={styles.container}
+        >
+            <View style={styles.glassCard}>
+                
+                <Text style={styles.emoji}>👤</Text>
+                
+                <Text style={styles.title}>Face Registration</Text>
+                
+                <Text style={styles.subtitle}>
+                    Take a clear, well-lit photo of your face so we can automatically deliver photos you are in.
+                </Text>
 
-            {/* Header */}
-            <Text style={styles.title}>Register Your Face</Text>
-            <Text style={styles.subtitle}>
-                We need 5 photos from different angles for accurate recognition
-            </Text>
-
-            {/* Progress Steps */}
-            <View style={styles.stepsContainer}>
-                {FACE_ANGLES.map((angle, index) => (
-                    <View key={angle.id} style={styles.stepItem}>
-                        <View style={[
-                            styles.stepDot,
-                            completedSteps.includes(angle.id) && styles.stepDotComplete,
-                            index === currentStep &&
-                            !completedSteps.includes(angle.id) &&
-                            styles.stepDotActive,
-                        ]}>
-                            <Text style={styles.stepDotText}>
-                                {completedSteps.includes(angle.id) ? '✓' : angle.emoji}
-                            </Text>
-                        </View>
-                        <Text style={[
-                            styles.stepLabel,
-                            index === currentStep && styles.stepLabelActive,
-                        ]}>
-                            {angle.title}
-                        </Text>
+                {lastPhotoUri ? (
+                    <View style={styles.previewContainer}>
+                        <Image source={{ uri: lastPhotoUri }} style={styles.previewImage} />
                     </View>
-                ))}
-            </View>
+                ) : (
+                    <View style={styles.tipsContainer}>
+                        <View style={styles.tipBadge}><Text style={styles.tipText}>✨ Good Lighting</Text></View>
+                        <View style={styles.tipBadge}><Text style={styles.tipText}>👓 No Glasses</Text></View>
+                        <View style={styles.tipBadge}><Text style={styles.tipText}>Look Straight</Text></View>
+                    </View>
+                )}
 
-            {/* Current Step Card */}
-            {!isComplete && (
-                <View style={styles.currentStepCard}>
-                    <Text style={styles.currentStepEmoji}>
-                        {currentAngle.emoji}
-                    </Text>
-                    <Text style={styles.currentStepTitle}>
-                        Step {currentStep + 1}: {currentAngle.title}
-                    </Text>
-                    <Text style={styles.currentStepInstruction}>
-                        {currentAngle.instruction}
-                    </Text>
-                </View>
-            )}
-
-            {/* Last Photo Preview */}
-            {lastPhotoUri && (
-                <View style={styles.previewContainer}>
-                    <Image
-                        source={{ uri: lastPhotoUri }}
-                        style={styles.previewImage}
-                    />
-                    <Text style={styles.previewLabel}>
-                        ✅ Last captured
-                    </Text>
-                </View>
-            )}
-
-            {/* Tips */}
-            {!isComplete && (
-                <View style={styles.tipsContainer}>
-                    <Text style={styles.tipText}>💡 Good lighting</Text>
-                    <Text style={styles.tipText}>💡 No glasses</Text>
-                    <Text style={styles.tipText}>💡 Face visible</Text>
-                </View>
-            )}
-
-            {/* Capture Button */}
-            {!isComplete && (
                 <TouchableOpacity
-                    style={[
-                        styles.captureButton,
-                        loading && styles.captureButtonDisabled
-                    ]}
+                    style={[styles.captureButton, loading && styles.captureButtonDisabled]}
                     onPress={capturePhoto}
                     disabled={loading}
+                    activeOpacity={0.8}
                 >
-                    {loading ? (
-                        <View style={styles.loadingContainer}>
-                            <ActivityIndicator color="#fff" size="small" />
-                            <Text style={styles.loadingText}>Processing...</Text>
-                        </View>
-                    ) : (
-                        <Text style={styles.captureButtonText}>
-                            📸 Capture Photo {currentStep + 1}/5
-                        </Text>
-                    )}
+                    <LinearGradient
+                        colors={['#FF6B35', '#F54EA2']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.gradientButton}
+                    >
+                        {loading ? (
+                            <View style={styles.row}>
+                                <ActivityIndicator color="#fff" size="small" />
+                                <Text style={styles.captureButtonText}>Uploading...</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.row}>
+                                <Text style={styles.btnIcon}>📸</Text>
+                                <Text style={styles.captureButtonText}>Enable Smart Face Match</Text>
+                            </View>
+                        )}
+                    </LinearGradient>
                 </TouchableOpacity>
-            )}
 
-            {/* Skip Button */}
-            {!isComplete && (
                 <TouchableOpacity
                     style={styles.skipButton}
                     onPress={skipRegistration}
@@ -260,155 +166,121 @@ const FaceRegistrationScreen = ({ navigation }: any) => {
                 >
                     <Text style={styles.skipButtonText}>Skip for now</Text>
                 </TouchableOpacity>
-            )}
 
-        </View>
+            </View>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000',
-        padding: 24,
         justifyContent: 'center',
+        padding: 20,
+    },
+    glassCard: {
+        backgroundColor: 'rgba(30, 30, 46, 0.65)',
+        borderRadius: 24,
+        padding: 30,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 5,
+    },
+    emoji: {
+        fontSize: 60,
+        marginBottom: 16,
     },
     title: {
-        fontSize: 26,
-        fontWeight: 'bold',
+        fontSize: 28,
+        fontWeight: '800',
         color: '#fff',
         textAlign: 'center',
-        marginBottom: 8,
+        marginBottom: 12,
+        letterSpacing: 0.5,
     },
     subtitle: {
-        fontSize: 13,
-        color: '#888',
+        fontSize: 14,
+        color: '#A0AEC0',
         textAlign: 'center',
-        marginBottom: 28,
-        lineHeight: 20,
-        paddingHorizontal: 16,
-    },
-    stepsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 24,
-        paddingHorizontal: 4,
-    },
-    stepItem: {
-        alignItems: 'center',
-        flex: 1,
-    },
-    stepDot: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#1a1a1a',
-        borderWidth: 2,
-        borderColor: '#333',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 6,
-    },
-    stepDotActive: {
-        borderColor: '#FF6B35',
-    },
-    stepDotComplete: {
-        backgroundColor: '#4CAF50',
-        borderColor: '#4CAF50',
-    },
-    stepDotText: {
-        fontSize: 16,
-    },
-    stepLabel: {
-        color: '#555',
-        fontSize: 9,
-        textAlign: 'center',
-    },
-    stepLabelActive: {
-        color: '#FF6B35',
-        fontWeight: 'bold',
-    },
-    currentStepCard: {
-        backgroundColor: '#1a1a1a',
-        borderRadius: 16,
-        padding: 20,
-        alignItems: 'center',
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#FF6B35',
-    },
-    currentStepEmoji: {
-        fontSize: 40,
-        marginBottom: 10,
-    },
-    currentStepTitle: {
-        color: '#fff',
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 8,
-    },
-    currentStepInstruction: {
-        color: '#888',
-        fontSize: 13,
-        textAlign: 'center',
-        lineHeight: 18,
+        marginBottom: 30,
+        lineHeight: 22,
+        paddingHorizontal: 10,
     },
     previewContainer: {
-        alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 30,
+        shadowColor: '#FF6B35',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 15,
     },
     previewImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        borderWidth: 2,
-        borderColor: '#4CAF50',
-    },
-    previewLabel: {
-        color: '#4CAF50',
-        fontSize: 12,
-        marginTop: 4,
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        borderWidth: 3,
+        borderColor: '#FF6B35',
     },
     tipsContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginBottom: 20,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 10,
+        marginBottom: 30,
+    },
+    tipBadge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
     tipText: {
-        color: '#555',
-        fontSize: 11,
+        color: '#E2E8F0',
+        fontSize: 12,
+        fontWeight: '500',
     },
     captureButton: {
-        backgroundColor: '#FF6B35',
-        borderRadius: 14,
-        padding: 18,
-        alignItems: 'center',
-        marginBottom: 12,
+        width: '100%',
+        borderRadius: 16,
+        overflow: 'hidden',
+        marginBottom: 20,
     },
     captureButtonDisabled: {
-        backgroundColor: '#888',
+        opacity: 0.7,
+    },
+    gradientButton: {
+        paddingVertical: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    btnIcon: {
+        fontSize: 20,
     },
     captureButtonText: {
         color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    loadingContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    loadingText: {
-        color: '#fff',
         fontSize: 16,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
     },
     skipButton: {
-        padding: 12,
-        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
     },
     skipButtonText: {
-        color: '#555',
+        color: '#64748B',
         fontSize: 14,
+        fontWeight: '600',
     },
 });
 

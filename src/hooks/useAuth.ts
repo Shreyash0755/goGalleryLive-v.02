@@ -10,21 +10,29 @@ export const useAuth = () => {
     // Listen for auth state changes
     // This persists login session automatically
     const unsubscribe = FirebaseAuth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        // User is logged in — fetch their profile
-        const userDoc = await FirebaseFirestore
-          .collection(Collections.USERS)
-          .doc(firebaseUser.uid)
-          .get();
+      try {
+        if (firebaseUser) {
+          const userDoc = await FirebaseFirestore
+            .collection(Collections.USERS)
+            .doc(firebaseUser.uid)
+            .get();
 
-        if (userDoc.exists()) {
-          setUser(userDoc.data() as User);
+          if (userDoc.exists()) {
+            console.log('useAuth successfully fetched user profile:', userDoc.data()?.email);
+            setUser(userDoc.data() as User);
+          } else {
+            console.log('useAuth could not find user profile in Firestore');
+            setUser(null);
+          }
+        } else {
+          setUser(null);
         }
-      } else {
-        // User is logged out
+      } catch (e: any) {
+        console.log('useAuth error:', e.message);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return unsubscribe;
