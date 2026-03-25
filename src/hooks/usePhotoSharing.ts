@@ -41,7 +41,7 @@ export const usePhotoSharing = (
           PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
           {
             title: 'Photo Access Permission',
-            message: 'GoGalleryLive needs access to your photos.',
+            message: 'Orca needs access to your photos.',
             buttonPositive: 'Allow',
             buttonNegative: 'Deny',
           }
@@ -52,7 +52,7 @@ export const usePhotoSharing = (
           PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
           {
             title: 'Storage Permission',
-            message: 'GoGalleryLive needs storage access.',
+            message: 'Orca needs storage access.',
             buttonPositive: 'Allow',
             buttonNegative: 'Deny',
           }

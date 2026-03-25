@@ -18,6 +18,7 @@
     "@react-native-ml-kit/face-detection": "^2.0.1",
     "@react-native/new-app-screen": "0.84.1",
     "@react-navigation/stack": "^7.8.5",
+    "lucide-react-native": "^1.6.0",
     "react": "19.2.3",
     "react-native": "0.84.1",
     "react-native-fs": "^2.20.0",

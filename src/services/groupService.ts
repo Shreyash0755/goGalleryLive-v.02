@@ -7,6 +7,8 @@ import {
   query,
   where,
   getDocs,
+  deleteDoc,
+  deleteField,
 } from '@react-native-firebase/firestore';
 import { FirebaseFirestore, FirebaseAuth, Collections } from './firebase';
 
@@ -83,7 +85,7 @@ export const createGroup = async (groupName: string): Promise<Group> => {
   // Create group reference with auto ID
   const groupRef = doc(collection(FirebaseFirestore, Collections.GROUPS));
   const groupId = groupRef.id;
-  const qrData = `gogallerylive://join/${inviteCode}`;
+  const qrData = `orca://join/${inviteCode}`;
   console.log('Group ID:', groupId);
 
   const groupData: Group = {
@@ -214,5 +216,57 @@ export const toggleSharing = async (
   const groupRef = doc(FirebaseFirestore, Collections.GROUPS, groupId);
   await updateDoc(groupRef, {
     [`members.${currentUser.uid}.sharingEnabled`]: enabled
+  });
+};
+
+// DELETE GROUP (Admin only)
+export const deleteGroup = async (groupId: string): Promise<void> => {
+  const currentUser = FirebaseAuth.currentUser;
+  if (!currentUser) throw new Error('Not logged in');
+
+  const groupRef = doc(FirebaseFirestore, Collections.GROUPS, groupId);
+  const groupDoc = await getDoc(groupRef);
+  if (!groupDoc.exists()) throw new Error('Group not found');
+
+  const data = groupDoc.data() as Group;
+  if (data.createdBy !== currentUser.uid && data.members[currentUser.uid]?.role !== 'admin') {
+    throw new Error('Only the admin can delete the group');
+  }
+
+  await deleteDoc(groupRef);
+};
+
+// LEAVE GROUP (For member/admin)
+export const leaveGroup = async (groupId: string): Promise<void> => {
+  const currentUser = FirebaseAuth.currentUser;
+  if (!currentUser) throw new Error('Not logged in');
+
+  const groupRef = doc(FirebaseFirestore, Collections.GROUPS, groupId);
+  
+  await updateDoc(groupRef, {
+    [`members.${currentUser.uid}`]: deleteField()
+  });
+};
+
+// REMOVE MEMBER (Admin only)
+export const removeMember = async (groupId: string, memberId: string): Promise<void> => {
+  const currentUser = FirebaseAuth.currentUser;
+  if (!currentUser) throw new Error('Not logged in');
+
+  const groupRef = doc(FirebaseFirestore, Collections.GROUPS, groupId);
+  const groupDoc = await getDoc(groupRef);
+  if (!groupDoc.exists()) throw new Error('Group not found');
+
+  const data = groupDoc.data() as Group;
+  if (data.createdBy !== currentUser.uid && data.members[currentUser.uid]?.role !== 'admin') {
+    throw new Error('Only the admin can remove members');
+  }
+
+  if (memberId === currentUser.uid) {
+    throw new Error('You cannot remove yourself. Use Leave Group instead.');
+  }
+
+  await updateDoc(groupRef, {
+    [`members.${memberId}`]: deleteField()
   });
 };

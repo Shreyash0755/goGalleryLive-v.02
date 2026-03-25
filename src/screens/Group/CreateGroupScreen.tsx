@@ -8,8 +8,10 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Share,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import LinearGradient from 'react-native-linear-gradient';
 import { createGroup, Group } from '../../services/groupService';
 
 const CreateGroupScreen = ({ navigation }: any) => {
@@ -87,7 +89,7 @@ const CreateGroupScreen = ({ navigation }: any) => {
 
   // Show create group form
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#0f2027', '#203a43', '#2c5364']} style={styles.container}>
       <Text style={styles.title}>Create New Group</Text>
       <Text style={styles.subtitle}>
         A unique invite code and QR code will be generated automatically
@@ -117,14 +119,13 @@ const CreateGroupScreen = ({ navigation }: any) => {
       <TouchableOpacity onPress={() => navigation.goBack()}>
         <Text style={styles.link}>Cancel</Text>
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   scrollContent: {
     padding: 24,
@@ -156,7 +157,7 @@ const styles = StyleSheet.create({
   },
   groupName: {
     fontSize: 20,
-    color: '#FF6B35',
+    color: '#3B82F6',
     marginBottom: 32,
   },
   qrContainer: {
@@ -186,11 +187,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderWidth: 2,
-    borderColor: '#FF6B35',
+    borderColor: '#3B82F6',
     borderStyle: 'dashed',
   },
   inviteCode: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontSize: 36,
     fontWeight: 'bold',
     letterSpacing: 8,
@@ -214,7 +215,7 @@ const styles = StyleSheet.create({
     width: '90%',
   },
   button: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B82F6',
     borderRadius: 10,
     padding: 16,
     alignItems: 'center',

@@ -20,6 +20,7 @@ import { usePhotoSharing } from '../../hooks/usePhotoSharing';
 import { listenToGroupPhotos, Photo, deletePhotoForEveryone, deletePhotoForMe } from '../../services/photoService';
 import { FirebaseAuth } from '../../services/firebase';
 import { Group } from '../../services/groupService';
+import LinearGradient from 'react-native-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 const PHOTO_SIZE = width / 3 - 4;
@@ -67,7 +68,7 @@ const PhotoItem = ({
       )}
       {loading && !error && (
         <View style={styles.loaderBox}>
-          <ActivityIndicator size="small" color="#FF6B35" />
+          <ActivityIndicator size="small" color="#3B82F6" />
         </View>
       )}
       <Text style={styles.photoUploader} numberOfLines={1}>
@@ -184,7 +185,7 @@ const PhotoViewer = ({
             <TouchableOpacity
               style={[
                 styles.downloadButton,
-                { backgroundColor: '#FF3B30', paddingHorizontal: 12 },
+                { backgroundColor: '#3B82F6', paddingHorizontal: 12 },
                 downloading && styles.downloadButtonDisabled
               ]}
               onPress={() => {
@@ -194,7 +195,7 @@ const PhotoViewer = ({
                   'Choose an action below',
                   [
                     { text: 'Cancel', style: 'cancel' as 'cancel' },
-                    { 
+                    {
                       text: 'Delete for me',
                       style: 'destructive' as 'destructive',
                       onPress: () => onDeleteForMe(currentPhoto)
@@ -317,7 +318,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         '/image/upload/'
       );
 
-      const fileName = `GoGalleryLive_${Date.now()}.jpg`;
+      const fileName = `Orca_${Date.now()}.jpg`;
       const downloadPath = `${RNFS.PicturesDirectoryPath}/${fileName}`;
 
       const result = await RNFS.downloadFile({
@@ -339,7 +340,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#0f2027', '#203a43', '#2c5364']} style={styles.container}>
 
       {/* Header */}
       <View style={styles.header}>
@@ -381,7 +382,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         <Switch
           value={sharingEnabled}
           onValueChange={setSharingEnabled}
-          trackColor={{ false: '#333', true: '#FF6B35' }}
+          trackColor={{ false: '#333', true: '#3B82F6' }}
           thumbColor={sharingEnabled ? '#fff' : '#888'}
         />
       </View>
@@ -418,7 +419,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       {/* Photos Grid */}
       {loading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#FF6B35" />
+          <ActivityIndicator size="large" color="#3B82F6" />
           <Text style={styles.loadingText}>Loading photos...</Text>
         </View>
       ) : filteredPhotos.length === 0 ? (
@@ -471,14 +472,13 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         currentUserUid={currentUser?.uid || ''}
       />
 
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#1a1a1a',
   },
   backButton: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontSize: 16,
     width: 60,
   },
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerIcon: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontSize: 20,
   },
   toggleContainer: {
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   downloadButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B82F6',
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 20,

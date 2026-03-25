@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Camera, useCameraDevice, useCodeScanner } from 'react-native-vision-camera';
+import LinearGradient from 'react-native-linear-gradient';
 import { joinGroupByCode } from '../../services/groupService';
 
 const JoinGroupScreen = ({ navigation }: any) => {
@@ -29,14 +30,14 @@ const JoinGroupScreen = ({ navigation }: any) => {
         console.log('Scanned QR:', scannedValue);
 
         // Extract invite code from QR data
-        // QR format: gogallerylive://join/XXXXXX
-        if (scannedValue?.startsWith('gogallerylive://join/')) {
-          const extractedCode = scannedValue.replace('gogallerylive://join/', '');
+        // QR format: orca://join/XXXXXX
+        if (scannedValue?.startsWith('orca://join/')) {
+          const extractedCode = scannedValue.replace('orca://join/', '');
           setScanned(true);
           setShowScanner(false);
           await handleJoin(extractedCode);
         } else {
-          Alert.alert('Invalid QR', 'This QR code is not for GoGalleryLive');
+          Alert.alert('Invalid QR', 'This QR code is not for Orca');
         }
       }
     }
@@ -116,7 +117,7 @@ const JoinGroupScreen = ({ navigation }: any) => {
           </View>
 
           <Text style={styles.scannerHint}>
-            Point camera at the GoGalleryLive QR code
+            Point camera at the Orca QR code
           </Text>
 
           <TouchableOpacity
@@ -129,7 +130,7 @@ const JoinGroupScreen = ({ navigation }: any) => {
 
         {loading && (
           <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="#FF6B35" />
+            <ActivityIndicator size="large" color="#3B82F6" />
             <Text style={styles.loadingText}>Joining group...</Text>
           </View>
         )}
@@ -139,7 +140,7 @@ const JoinGroupScreen = ({ navigation }: any) => {
 
   // Normal Join Screen
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#0f2027', '#203a43', '#2c5364']} style={styles.container}>
       <Text style={styles.title}>Join a Group</Text>
       <Text style={styles.subtitle}>
         Enter the invite code or scan QR code
@@ -186,14 +187,13 @@ const JoinGroupScreen = ({ navigation }: any) => {
       <TouchableOpacity onPress={() => navigation.goBack()}>
         <Text style={styles.link}>Cancel</Text>
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
     justifyContent: 'center',
     padding: 24,
   },
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
     borderRadius: 10,
     padding: 16,
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontSize: 28,
     marginBottom: 16,
     borderWidth: 1,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     letterSpacing: 8,
   },
   button: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B82F6',
     borderRadius: 10,
     padding: 16,
     alignItems: 'center',
@@ -258,10 +258,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#FF6B35',
+    borderColor: '#3B82F6',
   },
   qrButtonText: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: '#FF6B35',
+    borderColor: '#3B82F6',
     borderWidth: 4,
   },
   topLeft: {
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   cancelButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B82F6',
     borderRadius: 10,
     padding: 16,
     paddingHorizontal: 40,

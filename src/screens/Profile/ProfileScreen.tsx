@@ -72,7 +72,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <Switch
               value={darkMode}
               onValueChange={setDarkMode}
-              trackColor={{ false: '#333', true: '#FF6B35' }}
+              trackColor={{ false: '#333', true: '#3B82F6' }}
               thumbColor={darkMode ? '#fff' : '#888'}
             />
           </View>
@@ -82,7 +82,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <Switch
               value={notifications}
               onValueChange={setNotifications}
-              trackColor={{ false: '#333', true: '#FF6B35' }}
+              trackColor={{ false: '#333', true: '#3B82F6' }}
               thumbColor={notifications ? '#fff' : '#888'}
             />
           </View>
@@ -93,7 +93,7 @@ const ProfileScreen = ({ navigation }: any) => {
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
         
-        <Text style={styles.versionText}>GoGallery Live v1.0.0</Text>
+        <Text style={styles.versionText}>Orca v1.0.0</Text>
 
       </ScrollView>
     </LinearGradient>
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   backButton: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontSize: 16,
     width: 60,
   },
@@ -143,12 +143,12 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B82F6',
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#FF6B35',
+    shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   statusInactive: {
-    color: '#FF3B30',
+    color: '#3B82F6',
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   updateFaceText: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontWeight: '600',
     fontSize: 15,
   },
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   logoutText: {
-    color: '#FF3B30',
+    color: '#3B82F6',
     fontSize: 16,
     fontWeight: 'bold',
   },
