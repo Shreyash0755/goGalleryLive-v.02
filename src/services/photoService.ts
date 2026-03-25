@@ -1,4 +1,4 @@
-import { ref, push, onValue } from '@react-native-firebase/database';
+import { ref, push, onValue, remove, update } from '@react-native-firebase/database';
 import { FirebaseDatabase, FirebaseAuth, DBPaths } from './firebase';
 import { uploadPhotoToCloudinary } from './cloudinaryService';
 import { findUsersInPhoto } from './faceService';
@@ -13,6 +13,7 @@ export interface Photo {
   faces?: string[];
   faceProcessed?: boolean;
   faceCount?: number;
+  deletedBy?: string[]; // UIDs of users who deleted it 'for me'
 }
 
 const getOptimizedUrl = (url: string): string => {
@@ -121,6 +122,7 @@ export const listenToGroupPhotos = (
             faces: value.faces || [],
             faceProcessed: value.faceProcessed || false,
             faceCount: value.faceCount || 0,
+            deletedBy: value.deletedBy || [],
           });
         }
       });
@@ -136,4 +138,37 @@ export const listenToGroupPhotos = (
   );
 
   return unsubscribe;
+};
+
+/**
+ * Deletes a photo completely from the group for all members.
+ * Should only be allowed for the uploader or group creator.
+ */
+export const deletePhotoForEveryone = async (groupId: string, photoId: string) => {
+  try {
+    const dbPath = `${DBPaths.PHOTOS}/${groupId}/${photoId}`;
+    await remove(ref(FirebaseDatabase, dbPath));
+    console.log(`Successfully deleted photo ${photoId} for everyone`);
+  } catch (error) {
+    console.error(`Error deleting photo for everyone:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Hides a photo from the current user's gallery without affecting others.
+ */
+export const deletePhotoForMe = async (groupId: string, photoId: string, userId: string, currentDeletedBy: string[] = []) => {
+  try {
+    const dbPath = `${DBPaths.PHOTOS}/${groupId}/${photoId}`;
+
+    // Add this user to the deletedBy array
+    const updatedDeletedBy = [...new Set([...currentDeletedBy, userId])];
+
+    await update(ref(FirebaseDatabase, dbPath), { deletedBy: updatedDeletedBy });
+    console.log(`Successfully muted photo ${photoId} for user ${userId}`);
+  } catch (error) {
+    console.error(`Error deleting photo for me:`, error);
+    throw error;
+  }
 };

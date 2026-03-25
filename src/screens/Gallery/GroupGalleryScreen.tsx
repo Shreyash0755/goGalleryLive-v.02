@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import RNFS from 'react-native-fs';
 import { usePhotoSharing } from '../../hooks/usePhotoSharing';
-import { listenToGroupPhotos, Photo } from '../../services/photoService';
+import { listenToGroupPhotos, Photo, deletePhotoForEveryone, deletePhotoForMe } from '../../services/photoService';
 import { FirebaseAuth } from '../../services/firebase';
 import { Group } from '../../services/groupService';
 
@@ -84,6 +84,9 @@ const PhotoViewer = ({
   onClose,
   onDownload,
   downloading,
+  onDeleteForEveryone,
+  onDeleteForMe,
+  currentUserUid
 }: {
   visible: boolean;
   photos: Photo[];
@@ -91,6 +94,9 @@ const PhotoViewer = ({
   onClose: () => void;
   onDownload: (photo: Photo) => void;
   downloading: boolean;
+  onDeleteForEveryone: (photo: Photo) => void;
+  onDeleteForMe: (photo: Photo) => void;
+  currentUserUid: string;
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const flatListRef = useRef<FlatList>(null);
@@ -174,20 +180,53 @@ const PhotoViewer = ({
           <Text style={styles.viewerUploader}>
             📷 {currentPhoto?.uploaderName || 'Unknown'}
           </Text>
-          <TouchableOpacity
-            style={[
-              styles.downloadButton,
-              downloading && styles.downloadButtonDisabled
-            ]}
-            onPress={() => currentPhoto && onDownload(currentPhoto)}
-            disabled={downloading}
-          >
-            {downloading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.downloadButtonText}>⬇ Download</Text>
-            )}
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity
+              style={[
+                styles.downloadButton,
+                { backgroundColor: '#FF3B30', paddingHorizontal: 12 },
+                downloading && styles.downloadButtonDisabled
+              ]}
+              onPress={() => {
+                if (!currentPhoto) return;
+                Alert.alert(
+                  'Delete Photo',
+                  'Choose an action below',
+                  [
+                    { text: 'Cancel', style: 'cancel' as 'cancel' },
+                    { 
+                      text: 'Delete for me',
+                      style: 'destructive' as 'destructive',
+                      onPress: () => onDeleteForMe(currentPhoto)
+                    },
+                    ...(currentPhoto.uploadedBy === currentUserUid ? [{
+                      text: 'Delete for everyone',
+                      style: 'destructive' as 'destructive',
+                      onPress: () => onDeleteForEveryone(currentPhoto)
+                    }] : [])
+                  ]
+                );
+              }}
+              disabled={downloading}
+            >
+              <Text style={styles.downloadButtonText}>🗑️</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.downloadButton,
+                downloading && styles.downloadButtonDisabled
+              ]}
+              onPress={() => currentPhoto && onDownload(currentPhoto)}
+              disabled={downloading}
+            >
+              {downloading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.downloadButtonText}>⬇ Download</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
       </View>
@@ -228,12 +267,30 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
     return () => unsubscribe();
   }, [group.groupId, refreshKey]);
 
-  // Filter photos based on face detection
+  // Filter photos based on face detection and explicitly muted photos
+  const activePhotos = photos.filter(p => !p.deletedBy?.includes(currentUser?.uid || ''));
+
   const filteredPhotos = receiveOnlyMyPhotos
-  ? photos.filter(p =>
-      p.faces?.includes(currentUser?.uid || '')
-    )
-  : photos;
+    ? activePhotos.filter(p => p.faces?.includes(currentUser?.uid || ''))
+    : activePhotos;
+
+  const handleDeleteForEveryone = async (photo: Photo) => {
+    try {
+      await deletePhotoForEveryone(group.groupId, photo.id);
+      setViewerVisible(false);
+    } catch (err: any) {
+      Alert.alert('Error', 'Failed to delete photo globally');
+    }
+  };
+
+  const handleDeleteForMe = async (photo: Photo) => {
+    try {
+      await deletePhotoForMe(group.groupId, photo.id, currentUser?.uid || '', photo.deletedBy);
+      setViewerVisible(false);
+    } catch (err: any) {
+      Alert.alert('Error', 'Failed to mute photo');
+    }
+  };
 
   const openPhoto = (index: number) => {
     setViewerIndex(index);
@@ -409,6 +466,9 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         onClose={() => setViewerVisible(false)}
         onDownload={downloadPhoto}
         downloading={downloading}
+        onDeleteForEveryone={handleDeleteForEveryone}
+        onDeleteForMe={handleDeleteForMe}
+        currentUserUid={currentUser?.uid || ''}
       />
 
     </View>

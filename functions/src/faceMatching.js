@@ -41,7 +41,7 @@ async function matchFacesInPhoto(photoUrl, memberUids) {
         // Look at the matches AWS found in our GO_GALLERY collection
         for (const match of searchResponse.FaceMatches) {
           const registeredUid = match.Face.ExternalImageId;
-          
+
           // Only tag the photo if the matched user is ACTUALLY in this group!
           if (registeredUid && memberUids.includes(registeredUid)) {
             matchedUids.add(registeredUid);

@@ -30,8 +30,8 @@ const RegisterScreen = ({ navigation }: any) => {
     setLoading(true);
     try {
       await registerUser(name, email, password);
-      // Navigate to face registration after signup
-      navigation.replace('FaceRegistration');
+      // AppNavigator will automatically transition to GroupListScreen
+      // GroupListScreen will handle the FaceRegistration popup
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {

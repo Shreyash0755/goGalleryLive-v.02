@@ -46,7 +46,6 @@ const AppNavigator = () => {
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="FaceRegistration" component={FaceRegistrationScreen} />
           </>
         )}
       </Stack.Navigator>

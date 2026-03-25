@@ -10,14 +10,22 @@ import {
 } from 'react-native';
 import { getUserGroups, Group } from '../../services/groupService';
 import { logoutUser } from '../../services/authService';
+import { useAuth } from '../../hooks/useAuth';
 
 const GroupListScreen = ({ navigation }: any) => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    loadGroups();
-  }, []);
+    // If the user has explicitly skipped or finished, it evaluates to true.
+    // If the account was just created, it is undefined. Both undefined and false will trigger the redirect!
+    if (user && !user.faceRegistered) {
+      navigation.navigate('FaceRegistration');
+    } else {
+      loadGroups();
+    }
+  }, [user]);
 
   const loadGroups = async () => {
     try {
