@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import LinearGradient from 'react-native-linear-gradient';
+import { ChevronLeft, Shield, User as UserIcon, Share, Lock } from 'lucide-react-native';
 import { Group, deleteGroup, leaveGroup, removeMember } from '../../services/groupService';
 import { FirebaseAuth } from '../../services/firebase';
 
@@ -75,8 +76,8 @@ const GroupDetailScreen = ({ route, navigation }: any) => {
 
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
+            <ChevronLeft color="#3B82F6" size={28} />
           </TouchableOpacity>
           <Text style={styles.title}>{group.name}</Text>
           <View style={{ width: 60 }} />
@@ -157,11 +158,17 @@ const GroupDetailScreen = ({ route, navigation }: any) => {
               </View>
               <View style={styles.memberInfo}>
                 <Text style={styles.memberName}>{member.name}</Text>
-                <Text style={styles.memberMeta}>
-                  {member.role === 'admin' ? '👑 Admin' : '👤 Member'}
-                  {' • '}
-                  {member.sharingEnabled ? '📤 Sharing ON' : '📤 Sharing OFF'}
-                </Text>
+                <View style={styles.metaRow}>
+                  {member.role === 'admin' ? <Shield color="#888" size={12} /> : <UserIcon color="#888" size={12} />}
+                  <Text style={styles.memberMeta}>
+                    {member.role === 'admin' ? 'Admin' : 'Member'}
+                  </Text>
+                  <Text style={styles.metaDot}>•</Text>
+                  {member.sharingEnabled ? <Share color="#888" size={12} /> : <Lock color="#888" size={12} />}
+                  <Text style={styles.memberMeta}>
+                    {member.sharingEnabled ? 'Sharing' : 'Paused'}
+                  </Text>
+                </View>
               </View>
               {isAdmin && member.uid !== currentUserUid && (
                 <TouchableOpacity
@@ -201,13 +208,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 50,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  backButton: {
-    color: '#3B82F6',
-    fontSize: 16,
+  backButtonContainer: {
     width: 60,
+    justifyContent: 'center',
   },
   title: {
     color: '#fff',
@@ -313,8 +320,18 @@ const styles = StyleSheet.create({
   memberName: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 2,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaDot: {
+    color: '#555',
+    fontSize: 12,
+    marginHorizontal: 4,
   },
   memberMeta: {
     color: '#888',

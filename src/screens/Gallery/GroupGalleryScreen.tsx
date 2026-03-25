@@ -21,6 +21,7 @@ import { listenToGroupPhotos, Photo, deletePhotoForEveryone, deletePhotoForMe } 
 import { FirebaseAuth } from '../../services/firebase';
 import { Group } from '../../services/groupService';
 import LinearGradient from 'react-native-linear-gradient';
+import { AlertCircle, Camera as CameraIcon, Trash2, Download, Share, Lock, ScanFace, Users } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 const PHOTO_SIZE = width / 3 - 4;
@@ -62,7 +63,7 @@ const PhotoItem = ({
         />
       ) : (
         <View style={styles.errorBox}>
-          <Text style={styles.errorText}>❌</Text>
+          <AlertCircle color="#f44336" size={24} />
           <Text style={styles.retryText}>Tap to retry</Text>
         </View>
       )}
@@ -178,9 +179,12 @@ const PhotoViewer = ({
         />
 
         <View style={styles.viewerFooter}>
-          <Text style={styles.viewerUploader}>
-            📷 {currentPhoto?.uploaderName || 'Unknown'}
-          </Text>
+          <View style={styles.uploaderRow}>
+            <CameraIcon color="#aaa" size={14} />
+            <Text style={styles.viewerUploader} numberOfLines={1}>
+              {currentPhoto?.uploaderName || 'Unknown'}
+            </Text>
+          </View>
           <View style={{ flexDirection: 'row' }}>
             <TouchableOpacity
               style={[
@@ -210,7 +214,7 @@ const PhotoViewer = ({
               }}
               disabled={downloading}
             >
-              <Text style={styles.downloadButtonText}>🗑️</Text>
+              <Trash2 color="#fff" size={18} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -224,7 +228,10 @@ const PhotoViewer = ({
               {downloading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.downloadButtonText}>⬇ Download</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Download color="#fff" size={18} />
+                  <Text style={styles.downloadButtonText}>Download</Text>
+                </View>
               )}
             </TouchableOpacity>
           </View>
@@ -369,9 +376,12 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       {/* Sharing Toggle */}
       <View style={styles.toggleContainer}>
         <View style={styles.toggleLeft}>
-          <Text style={styles.toggleTitle}>
-            {sharingEnabled ? '📤 Sharing ON' : '📤 Sharing OFF'}
-          </Text>
+          <View style={styles.toggleTitleRow}>
+            {sharingEnabled ? <Share color="#4CAF50" size={18} /> : <Lock color="#888" size={18} />}
+            <Text style={styles.toggleTitle}>
+              {sharingEnabled ? 'Sharing ON' : 'Sharing OFF'}
+            </Text>
+          </View>
           <Text style={styles.toggleSubtitle}>
             {sharingEnabled
               ? 'Photos are being shared automatically'
@@ -390,9 +400,12 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       {/* Face Filter Toggle */}
       <View style={styles.toggleContainer}>
         <View style={styles.toggleLeft}>
-          <Text style={styles.toggleTitle}>
-            {receiveOnlyMyPhotos ? '🎯 My Photos Only' : '👥 All Photos'}
-          </Text>
+          <View style={styles.toggleTitleRow}>
+            {receiveOnlyMyPhotos ? <ScanFace color="#3B82F6" size={18} /> : <Users color="#3B82F6" size={18} />}
+            <Text style={styles.toggleTitle}>
+              {receiveOnlyMyPhotos ? 'My Photos Only' : 'All Photos'}
+            </Text>
+          </View>
           <Text style={styles.toggleSubtitle}>
             {receiveOnlyMyPhotos
               ? 'Showing photos you appear in'
@@ -424,9 +437,9 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         </View>
       ) : filteredPhotos.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.emptyIcon}>
-            {receiveOnlyMyPhotos ? '🎯' : '📷'}
-          </Text>
+          <View style={{ marginBottom: 16 }}>
+            {receiveOnlyMyPhotos ? <ScanFace color="#888" size={60} /> : <CameraIcon color="#888" size={60} />}
+          </View>
           <Text style={styles.emptyText}>
             {receiveOnlyMyPhotos
               ? 'No photos with you yet'
@@ -528,11 +541,16 @@ const styles = StyleSheet.create({
   toggleLeft: {
     flex: 1,
   },
+  toggleTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   toggleTitle: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
   },
   toggleSubtitle: {
     color: '#888',
@@ -542,13 +560,20 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 12,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  uploaderRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginRight: 10,
   },
   loadingText: {
     color: '#888',
@@ -691,8 +716,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginLeft: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   downloadButtonDisabled: {
     backgroundColor: '#888',

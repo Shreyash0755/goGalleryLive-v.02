@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { ChevronLeft } from 'lucide-react-native';
 import { registerUser } from '../../services/authService';
 
 const RegisterScreen = ({ navigation }: any) => {
@@ -44,7 +45,7 @@ const RegisterScreen = ({ navigation }: any) => {
     <LinearGradient colors={['#0f2027', '#203a43', '#2c5364']} style={styles.container}>
       {navigation.canGoBack() && (
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <ChevronLeft color="#3B82F6" size={32} />
         </TouchableOpacity>
       )}
       <Text style={styles.title}>Orca</Text>

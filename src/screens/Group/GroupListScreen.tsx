@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
 } from 'react-native';
+import { User as UserIcon, Users, Key, Plus, Camera, X } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { getUserGroups, Group } from '../../services/groupService';
 import { useAuth } from '../../hooks/useAuth';
@@ -62,10 +63,12 @@ const GroupListScreen = ({ navigation }: any) => {
           <Text style={styles.groupName} numberOfLines={1}>{item.name}</Text>
           <View style={styles.statsRow}>
             <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>👥 {memberCount} Members</Text>
+              <Users color="#ccc" size={12} />
+              <Text style={styles.statBadgeText}>{memberCount} Members</Text>
             </View>
             <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>🔑 ID: {item.inviteCode}</Text>
+              <Key color="#ccc" size={12} />
+              <Text style={styles.statBadgeText}>ID: {item.inviteCode}</Text>
             </View>
           </View>
         </View>
@@ -79,14 +82,14 @@ const GroupListScreen = ({ navigation }: any) => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTextContainer}>
-          <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0] || 'There'} 👋</Text>
+          <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0] || 'There'}</Text>
           <Text style={styles.tagline}>Ready to dive into your memories?</Text>
         </View>
         <TouchableOpacity 
           style={styles.profileButton}
           onPress={() => navigation.navigate('Profile')}
         >
-          <Text style={styles.profileIcon}>👤</Text>
+          <UserIcon color="#fff" size={20} />
         </TouchableOpacity>
       </View>
 
@@ -137,7 +140,7 @@ const GroupListScreen = ({ navigation }: any) => {
               onPress={() => { setShowFabMenu(false); navigation.navigate('CreateGroup'); }}
             >
               <Text style={styles.fabMenuText}>Create New Group</Text>
-              <View style={styles.fabMenuIconBox}><Text style={styles.fabMenuIcon}>➕</Text></View>
+              <View style={styles.fabMenuIconBox}><Plus color="#fff" size={20} /></View>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -145,7 +148,7 @@ const GroupListScreen = ({ navigation }: any) => {
               onPress={() => { setShowFabMenu(false); navigation.navigate('JoinGroup'); }}
             >
               <Text style={styles.fabMenuText}>Scan to Join</Text>
-              <View style={styles.fabMenuIconBox}><Text style={styles.fabMenuIcon}>📷</Text></View>
+              <View style={styles.fabMenuIconBox}><Camera color="#fff" size={20} /></View>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -161,7 +164,7 @@ const GroupListScreen = ({ navigation }: any) => {
           colors={['#3B82F6', '#2563EB']} 
           style={styles.fabGradient}
         >
-          <Text style={[styles.fabIcon, showFabMenu && styles.fabIconRotate]}>＋</Text>
+          {showFabMenu ? <X color="#fff" size={28} /> : <Plus color="#fff" size={32} />}
         </LinearGradient>
       </TouchableOpacity>
 
@@ -293,6 +296,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   statBadgeText: {
     color: '#ccc',

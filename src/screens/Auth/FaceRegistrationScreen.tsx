@@ -10,6 +10,8 @@ import {
     Dimensions,
     SafeAreaView
 } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
+import { Camera, useCameraDevice, useCameraFormat } from 'react-native-vision-camera';
 import { launchCamera } from 'react-native-image-picker';
 import LinearGradient from 'react-native-linear-gradient';
 import { registerFaceAngle } from '../../services/faceService';
@@ -154,8 +156,9 @@ const FaceRegistrationScreen = ({ navigation }: any) => {
                                 </View>
                             ) : (
                                 <View style={styles.row}>
-                                    <Text style={styles.btnIcon}>📸</Text>
-                                    <Text style={styles.captureButtonText}>Enable Smart Face Match</Text>
+                                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                                        <ChevronLeft color="#3B82F6" size={32} />
+                                    </TouchableOpacity>
                                 </View>
                             )}
                         </LinearGradient>
@@ -259,6 +262,10 @@ const styles = StyleSheet.create({
     gradientButton: {
         paddingVertical: 18,
         alignItems: 'center',
+        justifyContent: 'center',
+    },
+    backButton: {
+        width: 60,
         justifyContent: 'center',
     },
     row: {

@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { CheckCircle, XCircle, ChevronLeft } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { logoutUser } from '../../services/authService';
 
@@ -26,8 +27,8 @@ const ProfileScreen = ({ navigation }: any) => {
   return (
     <LinearGradient colors={['#0f2027', '#203a43', '#2c5364']} style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ChevronLeft color="#3B82F6" size={28} />
         </TouchableOpacity>
         <Text style={styles.title}>Profile</Text>
         <View style={styles.headerRight} />
@@ -51,9 +52,15 @@ const ProfileScreen = ({ navigation }: any) => {
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>Facial Data Status</Text>
             {user.faceRegistered ? (
-              <Text style={styles.statusActive}>✅ Verified</Text>
+              <View style={styles.statusBadge}>
+                <CheckCircle color="#4CAF50" size={16} />
+                <Text style={styles.statusActive}>Verified</Text>
+              </View>
             ) : (
-              <Text style={styles.statusInactive}>❌ Missing</Text>
+              <View style={styles.statusBadge}>
+                <XCircle color="#3B82F6" size={16} />
+                <Text style={styles.statusInactive}>Missing</Text>
+              </View>
             )}
           </View>
           <TouchableOpacity 
@@ -113,9 +120,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   backButton: {
-    color: '#3B82F6',
-    fontSize: 16,
     width: 60,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 20,
@@ -195,6 +201,11 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     color: '#eee',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   statusActive: {
     color: '#4CAF50',

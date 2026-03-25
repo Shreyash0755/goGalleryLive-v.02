@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Camera, useCameraDevice, useCodeScanner } from 'react-native-vision-camera';
 import LinearGradient from 'react-native-linear-gradient';
+import { ChevronLeft } from 'lucide-react-native';
 import { joinGroupByCode } from '../../services/groupService';
 
 const JoinGroupScreen = ({ navigation }: any) => {
@@ -183,10 +184,6 @@ const JoinGroupScreen = ({ navigation }: any) => {
       >
         <Text style={styles.qrButtonText}>📷 Scan QR Code</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Text style={styles.link}>Cancel</Text>
-      </TouchableOpacity>
     </LinearGradient>
   );
 };
@@ -194,10 +191,27 @@ const JoinGroupScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
     padding: 24,
+    paddingTop: 60, // Adjust for header
   },
-  title: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  backButtonContainer: {
+    width: 60,
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    flex: 1,
+  },
+  title: { // This style is now unused for the main title, but kept for other potential uses or if it was intended for the scanner title.
     fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
