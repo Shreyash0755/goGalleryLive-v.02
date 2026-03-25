@@ -12,6 +12,7 @@ import CreateGroupScreen from '../screens/Group/CreateGroupScreen';
 import JoinGroupScreen from '../screens/Group/JoinGroupScreen';
 import GroupDetailScreen from '../screens/Group/GroupDetailScreen';
 import GroupGalleryScreen from '../screens/Gallery/GroupGalleryScreen';
+import ProfileScreen from '../screens/Profile/ProfileScreen';
 
 const Stack = createStackNavigator();
 
@@ -41,6 +42,7 @@ const AppNavigator = () => {
             <Stack.Screen name="GroupDetail" component={GroupDetailScreen} />
             <Stack.Screen name="GroupGallery" component={GroupGalleryScreen} />
             <Stack.Screen name="FaceRegistration" component={FaceRegistrationScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
           </>
         ) : (
           <>

@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import { getUserGroups, Group } from '../../services/groupService';
-import { logoutUser } from '../../services/authService';
 import { useAuth } from '../../hooks/useAuth';
 
 const GroupListScreen = ({ navigation }: any) => {
@@ -59,8 +58,11 @@ const GroupListScreen = ({ navigation }: any) => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>My Groups</Text>
-        <TouchableOpacity onPress={() => logoutUser()}>
-          <Text style={styles.logout}>Logout</Text>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={() => navigation.navigate('Profile')}
+        >
+          <Text style={styles.profileIcon}>👤</Text>
         </TouchableOpacity>
       </View>
 
@@ -129,9 +131,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  logout: {
-    color: '#888',
-    fontSize: 14,
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  profileIcon: {
+    fontSize: 20,
   },
   loader: {
     flex: 1,
