@@ -77,51 +77,58 @@ class BackgroundSharingService {
   };
 
   private taskRandom = async (taskDataArguments: any) => {
-    const { groupId, uploaderName } = taskDataArguments;
-    this.groupId = groupId;
-    this.uploaderName = uploaderName;
+    try {
+      const { groupId, uploaderName } = taskDataArguments;
+      this.groupId = groupId;
+      this.uploaderName = uploaderName;
 
-    if (!PhotoDetectionModule) {
-      console.warn('BackgroundSharing: PhotoDetectionModule not found');
-      return;
-    }
-
-    const hasPermission = await this.requestPermissions();
-    if (!hasPermission) return;
-
-    // Clear old state
-    this.queue = [];
-    this.isUploading = false;
-
-    // Start Native Observer
-    PhotoDetectionModule.startService();
-    const emitter = new NativeEventEmitter(PhotoDetectionModule);
-    
-    if (this.subscription) {
-      this.subscription.remove();
-    }
-
-    this.subscription = emitter.addListener('NewPhotoDetected', (photoPath: string) => {
-      console.log('📸 Background detected new photo:', photoPath);
-      this.queue.push({
-        path: photoPath,
-        timestamp: Date.now(),
-      });
-      this.processQueue();
-    });
-
-    // Keep the task infinite loop alive
-    await new Promise(async (resolve) => {
-      while (BackgroundJob.isRunning()) {
-        await sleep(1000);
+      if (!PhotoDetectionModule) {
+        console.warn('BackgroundSharing: PhotoDetectionModule not found');
+        return;
       }
-      resolve(null);
-    });
+
+      // Clear old state
+      this.queue = [];
+      this.isUploading = false;
+
+      // Start Native Observer
+      PhotoDetectionModule.startService();
+      const emitter = new NativeEventEmitter(PhotoDetectionModule);
+      
+      if (this.subscription) {
+        this.subscription.remove();
+      }
+
+      this.subscription = emitter.addListener('NewPhotoDetected', (photoPath: string) => {
+        console.log('📸 Background detected new photo:', photoPath);
+        this.queue.push({
+          path: photoPath,
+          timestamp: Date.now(),
+        });
+        this.processQueue();
+      });
+
+      // Keep the task infinite loop alive
+      await new Promise(async (resolve) => {
+        while (BackgroundJob.isRunning()) {
+          await sleep(1000);
+        }
+        resolve(null);
+      });
+    } catch (err: any) {
+      console.log('Background task random error:', err.message);
+    }
   };
 
   public async startSharing(groupId: string, uploaderName: string) {
     if (BackgroundJob.isRunning()) {
       return; // Already running
+    }
+
+    const hasPermission = await this.requestPermissions();
+    if (!hasPermission) {
+      Alert.alert('Permission Required', 'Orca needs photo access to operate in the background.');
+      return;
     }
 
     console.log('Starting Persistent Foreground Sharing Service...');
@@ -151,16 +158,20 @@ class BackgroundSharingService {
 
   public async stopSharing() {
     console.log('Stopping Persistent Foreground Sharing Service...');
-    if (this.subscription) {
-      this.subscription.remove();
-      this.subscription = null;
-    }
-    if (PhotoDetectionModule) {
-      PhotoDetectionModule.stopService();
-    }
-    
-    if (BackgroundJob.isRunning()) {
-      await BackgroundJob.stop();
+    try {
+      if (this.subscription) {
+        this.subscription.remove();
+        this.subscription = null;
+      }
+      if (PhotoDetectionModule) {
+        PhotoDetectionModule.stopService();
+      }
+      
+      if (BackgroundJob.isRunning()) {
+        await BackgroundJob.stop();
+      }
+    } catch (e: any) {
+      console.log('Error stopping service cleanly', e.message);
     }
   }
 }
