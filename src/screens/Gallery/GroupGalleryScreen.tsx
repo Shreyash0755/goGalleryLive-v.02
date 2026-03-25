@@ -16,7 +16,8 @@ import {
   StatusBar,
 } from 'react-native';
 import RNFS from 'react-native-fs';
-import { usePhotoSharing } from '../../hooks/usePhotoSharing';
+import { backgroundSharingService } from '../../services/backgroundSharingTask';
+import BackgroundJob from 'react-native-background-actions';
 import { listenToGroupPhotos, Photo, deletePhotoForEveryone, deletePhotoForMe } from '../../services/photoService';
 import { FirebaseAuth } from '../../services/firebase';
 import { Group } from '../../services/groupService';
@@ -245,7 +246,7 @@ const PhotoViewer = ({
 const GroupGalleryScreen = ({ route, navigation }: any) => {
   const { group }: { group: Group } = route.params;
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [sharingEnabled, setSharingEnabled] = useState(false);
+  const [sharingEnabled, setSharingEnabled] = useState(BackgroundJob.isRunning());
   const [receiveOnlyMyPhotos, setReceiveOnlyMyPhotos] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -256,11 +257,13 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
   const currentUser = FirebaseAuth.currentUser;
   const currentMember = group.members[currentUser?.uid || ''];
 
-  usePhotoSharing(
-    group.groupId,
-    sharingEnabled,
-    currentMember?.name || 'Unknown'
-  );
+  useEffect(() => {
+    if (sharingEnabled) {
+      backgroundSharingService.startSharing(group.groupId, currentMember?.name || 'Unknown');
+    } else {
+      backgroundSharingService.stopSharing();
+    }
+  }, [sharingEnabled, group.groupId, currentMember]);
 
   useEffect(() => {
     setLoading(true);
