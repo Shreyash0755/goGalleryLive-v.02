@@ -37,6 +37,11 @@
       <service android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask"
                android:foregroundServiceType="dataSync" />
 
+      <service
+        android:name=".PhotoSharingService"
+        android:foregroundServiceType="dataSync"
+        android:exported="false" />
+
       <receiver
         android:name=".BootReceiver"
         android:exported="true">
