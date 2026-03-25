@@ -16,10 +16,13 @@ import {
   StatusBar,
 } from 'react-native';
 import RNFS from 'react-native-fs';
-import { usePhotoSharing } from '../../hooks/usePhotoSharing';
+import { backgroundSharingService } from '../../services/backgroundSharingTask';
+import BackgroundJob from 'react-native-background-actions';
 import { listenToGroupPhotos, Photo, deletePhotoForEveryone, deletePhotoForMe } from '../../services/photoService';
 import { FirebaseAuth } from '../../services/firebase';
 import { Group } from '../../services/groupService';
+import LinearGradient from 'react-native-linear-gradient';
+import { AlertCircle, Camera as CameraIcon, Trash2, Download, Share, Lock, ScanFace, Users } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 const PHOTO_SIZE = width / 3 - 4;
@@ -61,13 +64,13 @@ const PhotoItem = ({
         />
       ) : (
         <View style={styles.errorBox}>
-          <Text style={styles.errorText}>❌</Text>
+          <AlertCircle color="#f44336" size={24} />
           <Text style={styles.retryText}>Tap to retry</Text>
         </View>
       )}
       {loading && !error && (
         <View style={styles.loaderBox}>
-          <ActivityIndicator size="small" color="#FF6B35" />
+          <ActivityIndicator size="small" color="#3B82F6" />
         </View>
       )}
       <Text style={styles.photoUploader} numberOfLines={1}>
@@ -177,14 +180,17 @@ const PhotoViewer = ({
         />
 
         <View style={styles.viewerFooter}>
-          <Text style={styles.viewerUploader}>
-            📷 {currentPhoto?.uploaderName || 'Unknown'}
-          </Text>
+          <View style={styles.uploaderRow}>
+            <CameraIcon color="#aaa" size={14} />
+            <Text style={styles.viewerUploader} numberOfLines={1}>
+              {currentPhoto?.uploaderName || 'Unknown'}
+            </Text>
+          </View>
           <View style={{ flexDirection: 'row' }}>
             <TouchableOpacity
               style={[
                 styles.downloadButton,
-                { backgroundColor: '#FF3B30', paddingHorizontal: 12 },
+                { backgroundColor: '#3B82F6', paddingHorizontal: 12 },
                 downloading && styles.downloadButtonDisabled
               ]}
               onPress={() => {
@@ -194,7 +200,7 @@ const PhotoViewer = ({
                   'Choose an action below',
                   [
                     { text: 'Cancel', style: 'cancel' as 'cancel' },
-                    { 
+                    {
                       text: 'Delete for me',
                       style: 'destructive' as 'destructive',
                       onPress: () => onDeleteForMe(currentPhoto)
@@ -209,7 +215,7 @@ const PhotoViewer = ({
               }}
               disabled={downloading}
             >
-              <Text style={styles.downloadButtonText}>🗑️</Text>
+              <Trash2 color="#fff" size={18} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -223,7 +229,10 @@ const PhotoViewer = ({
               {downloading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.downloadButtonText}>⬇ Download</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Download color="#fff" size={18} />
+                  <Text style={styles.downloadButtonText}>Download</Text>
+                </View>
               )}
             </TouchableOpacity>
           </View>
@@ -237,7 +246,7 @@ const PhotoViewer = ({
 const GroupGalleryScreen = ({ route, navigation }: any) => {
   const { group }: { group: Group } = route.params;
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [sharingEnabled, setSharingEnabled] = useState(false);
+  const [sharingEnabled, setSharingEnabled] = useState(BackgroundJob.isRunning());
   const [receiveOnlyMyPhotos, setReceiveOnlyMyPhotos] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -248,11 +257,13 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
   const currentUser = FirebaseAuth.currentUser;
   const currentMember = group.members[currentUser?.uid || ''];
 
-  usePhotoSharing(
-    group.groupId,
-    sharingEnabled,
-    currentMember?.name || 'Unknown'
-  );
+  useEffect(() => {
+    if (sharingEnabled) {
+      backgroundSharingService.startSharing(group.groupId, currentMember?.name || 'Unknown');
+    } else {
+      backgroundSharingService.stopSharing();
+    }
+  }, [sharingEnabled, group.groupId, currentMember]);
 
   useEffect(() => {
     setLoading(true);
@@ -317,7 +328,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         '/image/upload/'
       );
 
-      const fileName = `GoGalleryLive_${Date.now()}.jpg`;
+      const fileName = `Orca_${Date.now()}.jpg`;
       const downloadPath = `${RNFS.PicturesDirectoryPath}/${fileName}`;
 
       const result = await RNFS.downloadFile({
@@ -339,7 +350,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#0f2027', '#203a43', '#2c5364']} style={styles.container}>
 
       {/* Header */}
       <View style={styles.header}>
@@ -368,9 +379,12 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       {/* Sharing Toggle */}
       <View style={styles.toggleContainer}>
         <View style={styles.toggleLeft}>
-          <Text style={styles.toggleTitle}>
-            {sharingEnabled ? '📤 Sharing ON' : '📤 Sharing OFF'}
-          </Text>
+          <View style={styles.toggleTitleRow}>
+            {sharingEnabled ? <Share color="#4CAF50" size={18} /> : <Lock color="#888" size={18} />}
+            <Text style={styles.toggleTitle}>
+              {sharingEnabled ? 'Sharing ON' : 'Sharing OFF'}
+            </Text>
+          </View>
           <Text style={styles.toggleSubtitle}>
             {sharingEnabled
               ? 'Photos are being shared automatically'
@@ -381,7 +395,7 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         <Switch
           value={sharingEnabled}
           onValueChange={setSharingEnabled}
-          trackColor={{ false: '#333', true: '#FF6B35' }}
+          trackColor={{ false: '#333', true: '#3B82F6' }}
           thumbColor={sharingEnabled ? '#fff' : '#888'}
         />
       </View>
@@ -389,9 +403,12 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       {/* Face Filter Toggle */}
       <View style={styles.toggleContainer}>
         <View style={styles.toggleLeft}>
-          <Text style={styles.toggleTitle}>
-            {receiveOnlyMyPhotos ? '🎯 My Photos Only' : '👥 All Photos'}
-          </Text>
+          <View style={styles.toggleTitleRow}>
+            {receiveOnlyMyPhotos ? <ScanFace color="#3B82F6" size={18} /> : <Users color="#3B82F6" size={18} />}
+            <Text style={styles.toggleTitle}>
+              {receiveOnlyMyPhotos ? 'My Photos Only' : 'All Photos'}
+            </Text>
+          </View>
           <Text style={styles.toggleSubtitle}>
             {receiveOnlyMyPhotos
               ? 'Showing photos you appear in'
@@ -418,14 +435,14 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
       {/* Photos Grid */}
       {loading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#FF6B35" />
+          <ActivityIndicator size="large" color="#3B82F6" />
           <Text style={styles.loadingText}>Loading photos...</Text>
         </View>
       ) : filteredPhotos.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.emptyIcon}>
-            {receiveOnlyMyPhotos ? '🎯' : '📷'}
-          </Text>
+          <View style={{ marginBottom: 16 }}>
+            {receiveOnlyMyPhotos ? <ScanFace color="#888" size={60} /> : <CameraIcon color="#888" size={60} />}
+          </View>
           <Text style={styles.emptyText}>
             {receiveOnlyMyPhotos
               ? 'No photos with you yet'
@@ -471,14 +488,13 @@ const GroupGalleryScreen = ({ route, navigation }: any) => {
         currentUserUid={currentUser?.uid || ''}
       />
 
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -490,7 +506,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#1a1a1a',
   },
   backButton: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontSize: 16,
     width: 60,
   },
@@ -511,7 +527,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerIcon: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontSize: 20,
   },
   toggleContainer: {
@@ -528,11 +544,16 @@ const styles = StyleSheet.create({
   toggleLeft: {
     flex: 1,
   },
+  toggleTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   toggleTitle: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
   },
   toggleSubtitle: {
     color: '#888',
@@ -542,13 +563,20 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 12,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  uploaderRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginRight: 10,
   },
   loadingText: {
     color: '#888',
@@ -688,11 +716,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   downloadButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B82F6',
     borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginLeft: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   downloadButtonDisabled: {
     backgroundColor: '#888',

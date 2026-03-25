@@ -8,7 +8,10 @@ import {
     ActivityIndicator,
     Image,
     Dimensions,
+    SafeAreaView
 } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
+import { Camera, useCameraDevice, useCameraFormat } from 'react-native-vision-camera';
 import { launchCamera } from 'react-native-image-picker';
 import LinearGradient from 'react-native-linear-gradient';
 import { registerFaceAngle } from '../../services/faceService';
@@ -107,67 +110,70 @@ const FaceRegistrationScreen = ({ navigation }: any) => {
     };
 
     return (
-        <LinearGradient 
-            colors={['#0F172A', '#1E1E2E', '#000000']} 
+        <LinearGradient
+            colors={['#0f2027', '#203a43', '#2c5364']}
             style={styles.container}
         >
-            <View style={styles.glassCard}>
-                
-                <Text style={styles.emoji}>👤</Text>
-                
-                <Text style={styles.title}>Face Registration</Text>
-                
-                <Text style={styles.subtitle}>
-                    Take a clear, well-lit photo of your face so we can automatically deliver photos you are in.
-                </Text>
+            <SafeAreaView style={{ flex: 1 }}>
+                <View style={styles.glassCard}>
 
-                {lastPhotoUri ? (
-                    <View style={styles.previewContainer}>
-                        <Image source={{ uri: lastPhotoUri }} style={styles.previewImage} />
-                    </View>
-                ) : (
-                    <View style={styles.tipsContainer}>
-                        <View style={styles.tipBadge}><Text style={styles.tipText}>✨ Good Lighting</Text></View>
-                        <View style={styles.tipBadge}><Text style={styles.tipText}>👓 No Glasses</Text></View>
-                        <View style={styles.tipBadge}><Text style={styles.tipText}>Look Straight</Text></View>
-                    </View>
-                )}
+                    <Text style={styles.emoji}>👤</Text>
 
-                <TouchableOpacity
-                    style={[styles.captureButton, loading && styles.captureButtonDisabled]}
-                    onPress={capturePhoto}
-                    disabled={loading}
-                    activeOpacity={0.8}
-                >
-                    <LinearGradient
-                        colors={['#FF6B35', '#F54EA2']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.gradientButton}
+                    <Text style={styles.title}>Face Registration</Text>
+
+                    <Text style={styles.subtitle}>
+                        Take a clear, well-lit photo of your face so we can automatically deliver photos you are in.
+                    </Text>
+
+                    {lastPhotoUri ? (
+                        <View style={styles.previewContainer}>
+                            <Image source={{ uri: lastPhotoUri }} style={styles.previewImage} />
+                        </View>
+                    ) : (
+                        <View style={styles.tipsContainer}>
+                            <View style={styles.tipBadge}><Text style={styles.tipText}>✨ Good Lighting</Text></View>
+                            <View style={styles.tipBadge}><Text style={styles.tipText}>👓 No Glasses</Text></View>
+                            <View style={styles.tipBadge}><Text style={styles.tipText}>Look Straight</Text></View>
+                        </View>
+                    )}
+
+                    <TouchableOpacity
+                        style={[styles.captureButton, loading && styles.captureButtonDisabled]}
+                        onPress={capturePhoto}
+                        disabled={loading}
+                        activeOpacity={0.8}
                     >
-                        {loading ? (
-                            <View style={styles.row}>
-                                <ActivityIndicator color="#fff" size="small" />
-                                <Text style={styles.captureButtonText}>Uploading...</Text>
-                            </View>
-                        ) : (
-                            <View style={styles.row}>
-                                <Text style={styles.btnIcon}>📸</Text>
-                                <Text style={styles.captureButtonText}>Enable Smart Face Match</Text>
-                            </View>
-                        )}
-                    </LinearGradient>
-                </TouchableOpacity>
+                        <LinearGradient
+                            colors={['#3B82F6', '#F54EA2']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.gradientButton}
+                        >
+                            {loading ? (
+                                <View style={styles.row}>
+                                    <ActivityIndicator color="#fff" size="small" />
+                                    <Text style={styles.captureButtonText}>Uploading...</Text>
+                                </View>
+                            ) : (
+                                <View style={styles.row}>
+                                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                                        <ChevronLeft color="#3B82F6" size={32} />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={styles.skipButton}
-                    onPress={skipRegistration}
-                    disabled={loading}
-                >
-                    <Text style={styles.skipButtonText}>Skip for now</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.skipButton}
+                        onPress={skipRegistration}
+                        disabled={loading}
+                    >
+                        <Text style={styles.skipButtonText}>Skip for now</Text>
+                    </TouchableOpacity>
 
-            </View>
+                </View>
+            </SafeAreaView>
         </LinearGradient>
     );
 };
@@ -175,7 +181,6 @@ const FaceRegistrationScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
         padding: 20,
     },
     glassCard: {
@@ -213,7 +218,7 @@ const styles = StyleSheet.create({
     },
     previewContainer: {
         marginBottom: 30,
-        shadowColor: '#FF6B35',
+        shadowColor: '#3B82F6',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.4,
         shadowRadius: 15,
@@ -223,7 +228,7 @@ const styles = StyleSheet.create({
         height: 140,
         borderRadius: 70,
         borderWidth: 3,
-        borderColor: '#FF6B35',
+        borderColor: '#3B82F6',
     },
     tipsContainer: {
         flexDirection: 'row',
@@ -257,6 +262,10 @@ const styles = StyleSheet.create({
     gradientButton: {
         paddingVertical: 18,
         alignItems: 'center',
+        justifyContent: 'center',
+    },
+    backButton: {
+        width: 60,
         justifyContent: 'center',
     },
     row: {

@@ -8,8 +8,11 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Share,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import LinearGradient from 'react-native-linear-gradient';
+import { ChevronLeft, PartyPopper } from 'lucide-react-native';
 import { createGroup, Group } from '../../services/groupService';
 
 const CreateGroupScreen = ({ navigation }: any) => {
@@ -43,11 +46,14 @@ const CreateGroupScreen = ({ navigation }: any) => {
   // Show created group with QR and invite code
   if (createdGroup) {
     return (
-      <ScrollView style={styles.container}
-        contentContainerStyle={styles.scrollContent}>
+      <LinearGradient colors={['#0f2027', '#203a43', '#2c5364']} style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
 
-        <Text style={styles.successTitle}>Group Created! 🎉</Text>
-        <Text style={styles.groupName}>{createdGroup.name}</Text>
+          <View style={styles.successHeader}>
+            <Text style={styles.successTitle}>Group Created!</Text>
+            <PartyPopper color="#4CAF50" size={32} />
+          </View>
+          <Text style={styles.groupName}>{createdGroup.name}</Text>
 
         {/* QR Code */}
         <View style={styles.qrContainer}>
@@ -81,14 +87,21 @@ const CreateGroupScreen = ({ navigation }: any) => {
           <Text style={styles.buttonText}>Go to My Groups</Text>
         </TouchableOpacity>
 
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     );
   }
 
   // Show create group form
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create New Group</Text>
+    <LinearGradient colors={['#0f2027', '#203a43', '#2c5364']} style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
+          <ChevronLeft color="#3B82F6" size={28} />
+        </TouchableOpacity>
+        <Text style={styles.title}>New Group</Text>
+        <View style={{ width: 60 }} />
+      </View>
       <Text style={styles.subtitle}>
         A unique invite code and QR code will be generated automatically
       </Text>
@@ -113,31 +126,39 @@ const CreateGroupScreen = ({ navigation }: any) => {
           <Text style={styles.buttonText}>Create Group</Text>
         )}
       </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Text style={styles.link}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   scrollContent: {
     padding: 24,
     alignItems: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 20,
+  },
+  backButtonContainer: {
+    width: 60,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
     textAlign: 'center',
-    marginTop: 60,
-    marginBottom: 12,
-    paddingHorizontal: 24,
+    // marginTop: 60, // Removed
+    // marginBottom: 12, // Removed
+    paddingHorizontal: 0, // Adjusted
+    flex: 1,
   },
   subtitle: {
     fontSize: 14,
@@ -147,16 +168,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     lineHeight: 20,
   },
+  successHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 60,
+    marginBottom: 8,
+  },
   successTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
-    marginTop: 40,
-    marginBottom: 8,
   },
   groupName: {
     fontSize: 20,
-    color: '#FF6B35',
+    color: '#3B82F6',
     marginBottom: 32,
   },
   qrContainer: {
@@ -173,7 +199,8 @@ const styles = StyleSheet.create({
   codeContainer: {
     alignItems: 'center',
     width: '100%',
-    marginBottom: 32,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   label: {
     color: '#888',
@@ -186,11 +213,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderWidth: 2,
-    borderColor: '#FF6B35',
+    borderColor: '#3B82F6',
     borderStyle: 'dashed',
   },
   inviteCode: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     fontSize: 36,
     fontWeight: 'bold',
     letterSpacing: 8,
@@ -214,7 +241,7 @@ const styles = StyleSheet.create({
     width: '90%',
   },
   button: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B82F6',
     borderRadius: 10,
     padding: 16,
     alignItems: 'center',

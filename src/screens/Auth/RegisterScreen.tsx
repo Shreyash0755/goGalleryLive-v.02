@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import { ChevronLeft } from 'lucide-react-native';
 import { registerUser } from '../../services/authService';
 
 const RegisterScreen = ({ navigation }: any) => {
@@ -40,8 +42,13 @@ const RegisterScreen = ({ navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>GoGalleryLive</Text>
+    <LinearGradient colors={['#0f2027', '#203a43', '#2c5364']} style={styles.container}>
+      {navigation.canGoBack() && (
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <ChevronLeft color="#3B82F6" size={32} />
+        </TouchableOpacity>
+      )}
+      <Text style={styles.title}>Orca</Text>
       <Text style={styles.subtitle}>Create Account</Text>
 
       <TextInput
@@ -86,16 +93,27 @@ const RegisterScreen = ({ navigation }: any) => {
       <TouchableOpacity onPress={() => navigation.navigate('Login')}>
         <Text style={styles.link}>Already have an account? Login</Text>
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
     justifyContent: 'center',
     padding: 24,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  backButtonText: {
+    color: '#3B82F6',
+    fontSize: 16,
+    fontWeight: '600',
   },
   title: {
     fontSize: 32,
@@ -121,7 +139,7 @@ const styles = StyleSheet.create({
     borderColor: '#333',
   },
   button: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#3B82F6',
     borderRadius: 10,
     padding: 16,
     alignItems: 'center',
@@ -133,7 +151,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   link: {
-    color: '#FF6B35',
+    color: '#3B82F6',
     textAlign: 'center',
     fontSize: 14,
   },
